@@ -478,6 +478,7 @@
   .pick button:active:not(:disabled) { background: var(--line); color: var(--ink); }
   .pick button:disabled { opacity: .3; }
   .pick button.plus { color: var(--accent); font-size: 23px; }
+  .pick.off { opacity: .5; }
   .picks-empty { margin: 0 0 15px; font-size: 13.5px; font-style: italic; color: var(--muted); }
   .setpick { display: flex; gap: 6px; flex-wrap: wrap; }
   .setpick .chip { min-height: 40px; font-size: 13px; }
@@ -564,24 +565,39 @@
   }
   function uid() { return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
+  /* Katalog maszyn Nautilus Inspiration — pełna linia 20 stanowisk.
+     „max” to górny koniec stosu w kg wg danych producenta (Core Health & Fitness):
+     240 lb ≈ 110 kg, 200 lb ≈ 90 kg, Leg Press 400 lb ≈ 180 kg. Stos w maszynie
+     przeskakuje co 5 lb, więc w kg wychodzą wartości zaokrąglone — dlatego
+     obciążenia zostają edytowalne i przy dodawaniu wybiera się krok. */
+  var CATALOG = [
+    { n: "Wyciskanie siedząc (Chest Press)", g: "Klatka", max: 110 },
+    { n: "Rozpiętki / tył barku (Pec Fly – Rear Deltoid)", g: "Klatka", max: 110 },
+    { n: "Wyciskanie nad głowę (Shoulder Press)", g: "Barki", max: 90 },
+    { n: "Unoszenie ramion bokiem (Deltoid Raise)", g: "Barki", max: 90 },
+    { n: "Ściąganie drążka (Lat Pull Down)", g: "Plecy", max: 110 },
+    { n: "Wiosłowanie pionowe (Vertical Row)", g: "Plecy", max: 110 },
+    { n: "Przenoszenie (Pull Over)", g: "Plecy", max: 90 },
+    { n: "Prostownik grzbietu (Back Extension)", g: "Plecy", max: 90 },
+    { n: "Uginanie ramion (Biceps Curl)", g: "Ramiona", max: 90 },
+    { n: "Uginanie oburącz (Bilateral Arm Curl)", g: "Ramiona", max: 90 },
+    { n: "Prostowanie ramion (Triceps Extension)", g: "Ramiona", max: 110 },
+    { n: "Dipy w maszynie (Triceps Dip)", g: "Ramiona", max: 110 },
+    { n: "Brzuch — spięcia (Abdominal Crunch)", g: "Brzuch", max: 90 },
+    { n: "Skręty tułowia (Rotary Torso)", g: "Brzuch", max: 90 },
+    { n: "Wypychanie nóg (Leg Press)", g: "Nogi", max: 180 },
+    { n: "Prostowanie nóg (Leg Extension)", g: "Nogi", max: 110 },
+    { n: "Uginanie nóg (Leg Curl)", g: "Nogi", max: 110 },
+    { n: "Odwodzenie / przywodzenie (Abduction – Adduction)", g: "Nogi", max: 90 },
+    { n: "Pośladki (Glute Press)", g: "Nogi", max: 90 },
+    { n: "Wyciąg dwustronny (Dual Adjustable Pulley)", g: "Inne", max: 90 }
+  ];
+  function fromCatalog(c, step) {
+    return { id: uid(), name: c.n, group: c.g, stack: range(step, c.max, step), level: 0, lastAt: null, history: [] };
+  }
+
   /* Zestaw startowy — używany tylko gdy nie ma jeszcze żadnych zapisanych danych. */
-  var DEFAULTS = [
-    { name: "Wyciąg górny", group: "Plecy", stack: range(5, 100, 5) },
-    { name: "Wioślarz siedząc", group: "Plecy", stack: range(5, 100, 5) },
-    { name: "Prostownik grzbietu", group: "Plecy", stack: range(5, 70, 5) },
-    { name: "Wyciskanie siedząc", group: "Klatka", stack: range(5, 90, 5) },
-    { name: "Rozpiętki (butterfly)", group: "Klatka", stack: range(5, 75, 5) },
-    { name: "Wyciskanie nad głowę", group: "Barki", stack: range(5, 70, 5) },
-    { name: "Wypychanie nóg", group: "Nogi", stack: range(10, 200, 10) },
-    { name: "Prostowanie nóg", group: "Nogi", stack: range(5, 90, 5) },
-    { name: "Uginanie nóg", group: "Nogi", stack: range(5, 90, 5) },
-    { name: "Przywodziciele", group: "Nogi", stack: range(5, 80, 5) },
-    { name: "Triceps na wyciągu", group: "Ramiona", stack: range(5, 70, 5) },
-    { name: "Biceps maszyna", group: "Ramiona", stack: range(5, 60, 5) },
-    { name: "Brzuch maszyna", group: "Brzuch", stack: range(5, 80, 5) }
-  ].map(function (m) {
-    return { id: uid(), name: m.name, group: m.group, stack: m.stack, level: 0, lastAt: null, history: [] };
-  });
+  var DEFAULTS = CATALOG.map(function (c) { return fromCatalog(c, 5); });
 
   /* Trzy zestawy ćwiczeń — stała trójka, użytkownik zmienia nazwy i zawartość.
      Zestaw to wybrane maszyny w ustalonej kolejności; maszyna może być w kilku. */
@@ -797,9 +813,11 @@
     renderSetbar();
     renderScore();
     var items = visible();
-    var empty = activeSet()
-      ? '<p class="empty">Ten zestaw jest jeszcze pusty.<br><button class="btn" data-act="setup">Ułóż zestaw</button></p>'
-      : '<p class="empty">Brak maszyn w tej partii.</p>';
+    var empty = !state.machines.length
+      ? '<p class="empty">Nie masz jeszcze żadnej maszyny.<br><button class="btn" data-act="catalog">Weź z katalogu Nautilus Inspiration</button></p>'
+      : activeSet()
+        ? '<p class="empty">Ten zestaw jest jeszcze pusty.<br><button class="btn" data-act="setup">Ułóż zestaw</button></p>'
+        : '<p class="empty">Brak maszyn w tej partii.</p>';
     document.getElementById("list").innerHTML = items.length
       ? items.map(function (m, i) { return cardHTML(m, i); }).join("")
       : empty;
@@ -840,6 +858,7 @@
     scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Ustawienia maszyny">' +
       '<div class="grab"></div>' +
       "<h3>" + (id ? "Maszyna" : "Nowa maszyna") + "</h3>" +
+      (id ? "" : '<button type="button" class="btn wide" id="f-cat" style="margin-bottom:15px">Weź z katalogu Nautilus Inspiration</button>') +
       '<div class="field"><label for="f-name">Nazwa</label><input id="f-name" value="' + esc(m.name) + '" placeholder="np. Wyciąg górny" autocomplete="off"></div>' +
       '<div class="field"><label for="f-group">Partia</label><select id="f-group">' +
         GROUPS.map(function (g) { return '<option value="' + esc(g) + '"' + (g === m.group ? " selected" : "") + ">" + esc(g) + "</option>"; }).join("") +
@@ -895,6 +914,7 @@
       scrim.querySelector("#f-stack").value = range(a, b, s).map(fmt).join(", ");
       buzz();
     });
+    if (!id) scrim.querySelector("#f-cat").addEventListener("click", function () { close(); openCatalog(); });
     scrim.querySelector("#f-cancel").addEventListener("click", close);
     if (id) scrim.querySelector("#f-del").addEventListener("click", function () {
       if (!confirm("Usunąć „" + m.name + "” razem z historią?")) return;
@@ -926,6 +946,93 @@
     });
     function close() {
       editing = null;
+      scrim.remove();
+      document.removeEventListener("keydown", onKey);
+    }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+  }
+
+  /* ---------- katalog maszyn ---------- */
+  function openCatalog() {
+    var step = 5;
+    var have = {};
+    state.machines.forEach(function (m) { have[m.name.toLowerCase()] = true; });
+    var picked = {};
+    CATALOG.forEach(function (c) { picked[c.n] = !have[c.n.toLowerCase()]; });
+
+    var scrim = document.createElement("div");
+    scrim.className = "scrim";
+    scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Katalog maszyn">' +
+      '<div class="grab"></div><h3>Nautilus Inspiration</h3>' +
+      '<p class="hint" style="margin:-8px 0 14px">Cała linia — 20 stanowisk. Stosy wg danych producenta ' +
+        "(240 lb ≈ 110 kg, 200 lb ≈ 90 kg, Leg Press 400 lb ≈ 180 kg). " +
+        "Sprawdź płytki na swoich maszynach i popraw, jeśli się różnią.</p>" +
+      '<div class="field"><label>Krok stosu</label><div class="setpick" id="c-step">' +
+        '<button type="button" class="chip set" data-step="2.5" aria-pressed="false">co 2,5 kg</button>' +
+        '<button type="button" class="chip set" data-step="5" aria-pressed="true">co 5 kg</button>' +
+        '<button type="button" class="chip set" data-step="10" aria-pressed="false">co 10 kg</button>' +
+      "</div></div>" +
+      '<div id="c-body"></div>' +
+      '<div class="sheet-actions">' +
+        '<button class="btn" id="c-cancel">Anuluj</button>' +
+        '<button class="btn primary" id="c-add">Dodaj</button>' +
+      "</div></div>";
+    document.body.appendChild(scrim);
+
+    var sheet = scrim.querySelector(".sheet");
+    var body = scrim.querySelector("#c-body");
+    var addBtn = scrim.querySelector("#c-add");
+
+    function count() {
+      return CATALOG.filter(function (c) { return picked[c.n] && !have[c.n.toLowerCase()]; }).length;
+    }
+    function draw() {
+      body.innerHTML = '<p class="sub">Maszyny (' + count() + " z " + CATALOG.length + ")</p>" +
+        '<div class="picks">' + CATALOG.map(function (c) {
+          var mine = have[c.n.toLowerCase()];
+          var on = picked[c.n] && !mine;
+          return '<div class="pick' + (mine ? " off" : "") + '">' +
+            '<span class="nm">' + esc(c.n) + "<small>" + esc(c.g) + " · do " + fmt(c.max) + " kg" +
+              (mine ? " · już masz" : "") + "</small></span>" +
+            '<button type="button" class="plus" data-pick="' + esc(c.n) + '"' + (mine ? " disabled" : "") +
+              ' aria-pressed="' + on + '" aria-label="' + (on ? "Odznacz" : "Zaznacz") + '">' +
+              (on ? "✓" : "+") + "</button></div>";
+        }).join("") + "</div>";
+      addBtn.textContent = "Dodaj (" + count() + ")";
+    }
+    draw();
+
+    scrim.querySelector("#c-step").addEventListener("click", function (e) {
+      var b = e.target.closest(".chip");
+      if (!b) return;
+      step = parseFloat(b.getAttribute("data-step"));
+      var chips = scrim.querySelectorAll("#c-step .chip");
+      for (var i = 0; i < chips.length; i++) {
+        chips[i].setAttribute("aria-pressed", String(chips[i] === b));
+      }
+      buzz();
+    });
+    body.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-pick]");
+      if (!b || b.disabled) return;
+      var key = b.getAttribute("data-pick");
+      picked[key] = !picked[key];
+      var keep = sheet.scrollTop;
+      draw();
+      sheet.scrollTop = keep;
+      buzz();
+    });
+    scrim.addEventListener("click", function (e) { if (e.target === scrim) close(); });
+    scrim.querySelector("#c-cancel").addEventListener("click", close);
+    addBtn.addEventListener("click", function () {
+      var add = CATALOG.filter(function (c) { return picked[c.n] && !have[c.n.toLowerCase()]; });
+      if (!add.length) { toast("Nic nie zaznaczone"); return; }
+      add.forEach(function (c) { state.machines.push(fromCatalog(c, step)); });
+      save(); close(); render();
+      toast("Dodano " + add.length + (add.length === 1 ? " maszynę" : add.length < 5 ? " maszyny" : " maszyn"));
+    });
+    function close() {
       scrim.remove();
       document.removeEventListener("keydown", onKey);
     }
@@ -1060,6 +1167,7 @@
     var act = btn.getAttribute("data-act");
     if (act === "inc" || act === "dec") return; // obsłużone przy dotknięciu
     if (act === "setup") { var cur = activeSet(); if (cur) openSetEditor(cur.id); return; }
+    if (act === "catalog") { openCatalog(); return; }
     var card = btn.closest(".card");
     var m = find(card.getAttribute("data-id"));
     if (!m) return;

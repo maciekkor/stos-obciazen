@@ -4,6 +4,22 @@ Prosty tracker obciążeń na maszynach siłowych. Pokazuje, jaki ciężar był 
 ustawiony na danej maszynie, i pozwala jednym dotknięciem zejść lub wejść na kolejny
 poziom stosu. Wartości obciążeń są predefiniowane per maszyna i edytowalne.
 
+## Katalog maszyn Nautilus Inspiration
+
+W aplikacji jest gotowy katalog całej linii **Nautilus Inspiration®** — 20 stanowisk
+z nazwami polskimi i oryginalnymi, przypisaną partią i stosem obciążeń.
+
+- Świeża instalacja startuje od razu z tymi maszynami.
+- Jeśli masz już swoje dane, katalog otwiera się przyciskiem **„Weź z katalogu
+  Nautilus Inspiration”** w arkuszu nowej maszyny (+ w dolnym pasku). Maszyny, które
+  już masz, są wyszarzone i nie dublują się.
+- Przy dodawaniu wybiera się **krok stosu**: co 2,5 / 5 / 10 kg.
+
+Górne wartości stosów pochodzą ze specyfikacji producenta (Core Health & Fitness):
+240 lb ≈ 110 kg, 200 lb ≈ 90 kg, Leg Press 400 lb ≈ 180 kg. Maszyny przeskakują
+co 5 lb, więc w kilogramach wychodzą wartości zaokrąglone — **warto porównać
+z płytkami na swoich maszynach** i poprawić w edytorze (jest tam generator „od / do / co”).
+
 ## Zestawy ćwiczeń
 
 Obok widoku „Wszystko” i filtrów po partii są trzy zestawy treningowe (A, B, C) —
