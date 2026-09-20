@@ -30,68 +30,30 @@ Ikona `ⓘ` na karcie rozwija panel z:
 
 ### Obciążenia
 
-| Producent | Krok stosu | Skąd |
+| Producent | Płytka / krok | Stosy |
 | --- | --- | --- |
-| Nautilus Inspiration | 2,25 / 4,5 / 9 kg (5 / 10 / 20 lb) | stosy 240 lb ≈ 110 kg, 200 lb ≈ 90 kg, Leg Press 400 lb ≈ 180 kg |
-| Technogym Selection | 5 kg | stosy metryczne, np. Chest Press 100 kg, Leg Press 190 kg |
+| Nautilus Inspiration | 10 lb = **4,5 kg** (Leg Press 20 lb = **9 kg**) | 240 lb = 24 płytki = 108 kg; 200 lb = 20 płytek = 90 kg; Leg Press 400 lb = 20 płytek = 180 kg |
+| Technogym Selection | **5 kg** (Leg Press **10 kg**) | m.in. Chest Press 100 kg, Vertical Traction 100 kg, Leg Extension/Curl 95 kg, Leg Press 190 kg |
 
-Maszyny Inspiration przeskakują co 5 lb, stąd niecałkowite wartości w kilogramach.
-Konkretny egzemplarz bywa inny (wersje „plus”, dokładki), więc **warto porównać
-z płytkami u siebie** i poprawić w edytorze — jest tam generator „od / do / co”.
+Reklamowane przez Nautilusa „5 lb increments” to nie waga płytki, tylko **dokładka
+Lock N Load** — przełącznik dobiera pół płytki. Sam stos chodzi co płytkę, czyli 4,5 kg.
+Widać to też z wymiarów: przy wieży 163 cm stos 240 lb złożony z 48 płytek po 5 lb
+by się tam nie zmieścił, a 24 płytki po 10 lb owszem.
+
+W katalogu wybierasz więc krok jako **pół płytki (2,25 kg) / płytkę (4,5 kg,
+domyślnie) / dwie płytki (9 kg)**; na Leg Pressie każda z tych opcji jest
+automatycznie dwa razy większa, bo maszyna ma grubsze płytki.
+
+Konkretny egzemplarz bywa inny (wersje „plus”, dokładki), więc warto porównać
+z płytkami u siebie i poprawić w edytorze — jest tam generator „od / do / co”.
 
 ## Dane
 
-`⋯` w nagłówku otwiera panel danych: dokładanie ćwiczeń z katalogu oraz
-**wyzerowanie wszystkiego** — kasuje ćwiczenia, poziomy, historię i zestawy,
-po czym zaciąga cały katalog od nowa. Operacja jest nieodwracalna i wymaga
-dwóch potwierdzeń.
+`⋯` w nagłówku otwiera panel danych:
 
-## Zestawy ćwiczeń
-
-Obok widoku „Wszystko” i filtrów po partii są trzy zestawy treningowe (A, B, C) —
-gotowe plany na konkretny dzień. W zestawie widać tylko jego maszyny, w ustalonej
-kolejności, a licznik u góry pokazuje postęp tego zestawu, nie całej listy.
-
-- **Nazwa i zawartość są edytowalne** — ✎ na pasku zestawu otwiera arkusz, w którym
-  dobiera się ćwiczenia, zmienia ich kolejność (↑ ↓) i nadaje zestawowi własną nazwę.
-- **Maszyna może być w kilku zestawach naraz** — przypisanie jest też w edytorze
-  maszyny, pod polem partii.
-- **Nowa maszyna dodana z widoku zestawu** od razu do niego trafia.
-- **Powrót do wszystkich ćwiczeń** — przycisk „← Wszystko” na pasku zestawu,
-  a w dolnym pasku „Wszystko” stoi jako pierwsze, przed zestawami.
-- **Aplikacja pamięta wybrany widok** — po zamknięciu otwiera się tam, gdzie się skończyło.
-
-Przy pierwszym uruchomieniu zestawy są wstępnie wypełnione maszynami startowymi
-(A — klatka, barki i ramiona; B — plecy i brzuch; C — nogi).
-
-## Jak to działa
-
-- **Jedna strona, bez backendu.** Wszystko dzieje się w przeglądarce.
-- **Dane zostają na urządzeniu** użytkownika (`localStorage`). Nic nie jest wysyłane
-  na żaden serwer — każdy, kto otworzy stronę, pracuje na własnych danych.
-- **Działa bez zasięgu** — service worker trzyma kopię aplikacji, więc na siłowni
-  w piwnicy też się otworzy.
-- **Instaluje się jak aplikacja** — „Dodaj do ekranu głównego” na Androidzie
-  i iPhonie.
-
-## Uruchomienie
-
-GitHub Pages: Settings → Pages → Source: `Deploy from a branch`, branch `main`, katalog `/ (root)`.
-
-Lokalnie wystarczy dowolny serwer statyczny, np.:
-
-```
-python3 -m http.server 8000
-```
-
-Otwarcie `index.html` jako pliku z dysku (`file://`) nie zadziała poprawnie —
-przeglądarki blokują wtedy zapis danych i service workera.
-
-## Pliki
-
-| Plik | Do czego |
-| --- | --- |
-| `index.html` | cała aplikacja: układ, style i logika |
-| `manifest.webmanifest` | nazwa, ikony i tryb pełnoekranowy przy instalacji |
-| `sw.js` | service worker — działanie bez sieci |
-| `icon-*.png`, `apple-touch-icon.png` | ikony aplikacji |
+- **Dołóż z katalogu ćwiczeń** — dobiera brakujące pozycje bez ruszania reszty.
+- **Przelicz stosy wg katalogu** — przestawia obciążenia na wybrany krok i ustawia
+  poziom na najbliższy dotychczasowemu ciężarowi. Historia, zestawy i maszyny spoza
+  katalogu zostają nietknięte.
+- **Wyzeruj dane i zacznij od zera** — kasuje ćwiczenia, poziomy, historię i zestawy,
+  po czym zaciąga cały katalog od nowa. Nieodwracalne, za dwoma potwierdzeniami.

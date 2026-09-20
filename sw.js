@@ -2,7 +2,7 @@
    Strategia: najpierw sieć (żeby po aktualizacji od razu był nowy kod),
    a gdy sieci nie ma — wersja z pamięci podręcznej. */
 
-var CACHE = "stos-obciazen-v5";
+var CACHE = "stos-obciazen-v6";
 var CORE = [
   "./",
   "index.html",

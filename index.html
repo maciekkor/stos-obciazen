@@ -624,8 +624,10 @@
   /* ---------- katalog ćwiczeń ----------
      Jedna pozycja = jedno ćwiczenie, a pod nim warianty maszyn u różnych producentów.
      Górne końce stosów wg danych producentów:
-       Nautilus Inspiration (Core Health & Fitness) — 240 lb ≈ 110 kg, 200 lb ≈ 90 kg,
-         Leg Press 400 lb ≈ 180 kg; stos przeskakuje co 5 lb = 2,25 kg.
+       Nautilus Inspiration (Core Health & Fitness) — 240 lb ≈ 108 kg (24 płytki po 10 lb),
+         200 lb ≈ 90 kg (20 płytek), Leg Press 400 lb ≈ 180 kg (20 płytek po 20 lb).
+         Płytka to 10 lb = 4,5 kg i taki jest domyślny krok; Leg Press ma płytki 20 lb,
+         czyli 9 kg. Reklamowane „5 lb increments” to dokładka Lock N Load — pół płytki.
        Technogym Selection — stosy metryczne, krok 5 kg.
      Konkretny egzemplarz bywa inny (wersja „plus”, dokładki), więc wszystko zostaje
      edytowalne. */
@@ -633,10 +635,11 @@
     insp: { name: "Nautilus Inspiration", short: "Inspiration", step: 2.25 },
     tg: { name: "Technogym Selection", short: "Technogym", step: 5 }
   };
+  var INSP_STEP = 4.5;   /* płytka 10 lb — tak chodzi stos bez dokładki */
   var INSP_STEPS = [
-    { v: 2.25, label: "co 2,25 kg", note: "5 lb" },
-    { v: 4.5, label: "co 4,5 kg", note: "10 lb" },
-    { v: 9, label: "co 9 kg", note: "20 lb" }
+    { v: 2.25, label: "pół płytki", note: "2,25 kg" },
+    { v: 4.5, label: "płytka", note: "4,5 kg" },
+    { v: 9, label: "dwie płytki", note: "9 kg" }
   ];
   var MUSCLES = {
     klatka: "klatka piersiowa",
@@ -661,13 +664,13 @@
   var CATALOG = [
     { k: "chest-press", n: "Wyciskanie siedząc", g: "Klatka", mv: "press",
       pr: ["klatka"], se: ["triceps", "bark"],
-      v: [{ b: "insp", m: "Chest Press (IPVP3)", max: 110 }, { b: "tg", m: "Chest Press", max: 100 }] },
+      v: [{ b: "insp", m: "Chest Press (IPVP3)", max: 108 }, { b: "tg", m: "Chest Press", max: 100 }] },
     { k: "pec-fly", n: "Rozpiętki", g: "Klatka", mv: "fly",
       pr: ["klatka"], se: ["bark"],
-      v: [{ b: "insp", m: "Pec Fly (IPPF3)", max: 110 }, { b: "tg", m: "Pectoral Machine", max: 90 }] },
+      v: [{ b: "insp", m: "Pec Fly (IPPF3)", max: 108 }, { b: "tg", m: "Pectoral Machine", max: 90 }] },
     { k: "rear-delt", n: "Odwrotne rozpiętki (tył barku)", g: "Barki", mv: "fly",
       pr: ["bark-tyl"], se: ["czworoboczny", "lats"],
-      v: [{ b: "insp", m: "Rear Deltoid (IPPF3)", max: 110 }, { b: "tg", m: "Rear Delt", max: 80 }] },
+      v: [{ b: "insp", m: "Rear Deltoid (IPPF3)", max: 108 }, { b: "tg", m: "Rear Delt", max: 80 }] },
     { k: "shoulder-press", n: "Wyciskanie nad głowę", g: "Barki", mv: "press",
       pr: ["bark"], se: ["triceps"],
       v: [{ b: "insp", m: "Shoulder Press (IPSP3)", max: 90 }, { b: "tg", m: "Shoulder Press", max: 65 }] },
@@ -676,10 +679,10 @@
       v: [{ b: "insp", m: "Deltoid Raise (IPDR3)", max: 90 }, { b: "tg", m: "Delts Machine", max: 65 }] },
     { k: "lat-pulldown", n: "Ściąganie drążka", g: "Plecy", mv: "pulldown",
       pr: ["lats"], se: ["biceps", "czworoboczny"],
-      v: [{ b: "insp", m: "Lat Pull Down (IPPD3)", max: 110 }, { b: "tg", m: "Vertical Traction", max: 100 }] },
+      v: [{ b: "insp", m: "Lat Pull Down (IPPD3)", max: 108 }, { b: "tg", m: "Vertical Traction", max: 100 }] },
     { k: "row", n: "Wiosłowanie", g: "Plecy", mv: "row",
       pr: ["lats", "czworoboczny"], se: ["biceps", "bark-tyl"],
-      v: [{ b: "insp", m: "Vertical Row (IPVR3)", max: 110 }, { b: "tg", m: "Low Row", max: 85 }] },
+      v: [{ b: "insp", m: "Vertical Row (IPVR3)", max: 108 }, { b: "tg", m: "Low Row", max: 85 }] },
     { k: "pullover", n: "Przenoszenie", g: "Plecy", mv: "pullover",
       pr: ["lats"], se: ["klatka", "triceps"],
       v: [{ b: "insp", m: "Pull Over (IPPO3)", max: 90 }] },
@@ -694,10 +697,10 @@
       v: [{ b: "insp", m: "Bilateral Arm Curl (IPBA3)", max: 90 }] },
     { k: "triceps", n: "Prostowanie ramion", g: "Ramiona", mv: "pushdown",
       pr: ["triceps"], se: [],
-      v: [{ b: "insp", m: "Triceps Extension (IPTE3)", max: 110 }, { b: "tg", m: "Arm Extension", max: 65 }] },
+      v: [{ b: "insp", m: "Triceps Extension (IPTE3)", max: 108 }, { b: "tg", m: "Arm Extension", max: 65 }] },
     { k: "dip", n: "Dipy w maszynie", g: "Ramiona", mv: "dip",
       pr: ["triceps"], se: ["klatka", "bark"],
-      v: [{ b: "insp", m: "Triceps Dip (IPTD4)", max: 110 }] },
+      v: [{ b: "insp", m: "Triceps Dip (IPTD4)", max: 108 }] },
     { k: "crunch", n: "Brzuch — spięcia", g: "Brzuch", mv: "crunch",
       pr: ["brzuch"], se: ["skosne"],
       v: [{ b: "insp", m: "Abdominal Crunch (IPAC3)", max: 90 }, { b: "tg", m: "Abdominal Crunch", max: 65 }] },
@@ -706,13 +709,14 @@
       v: [{ b: "insp", m: "Rotary Torso (IPRT5)", max: 90 }, { b: "tg", m: "Rotary Torso", max: 65 }] },
     { k: "leg-press", n: "Wypychanie nóg", g: "Nogi", mv: "legpress",
       pr: ["czworoglowy", "posladki"], se: ["dwuglowy", "lydki"],
-      v: [{ b: "insp", m: "Leg Press (IPLP3)", max: 180 }, { b: "tg", m: "Leg Press", max: 190 }] },
+      /* grubsze płytki: Inspiration 20 lb zamiast 10, Technogym 10 kg zamiast 5 */
+      v: [{ b: "insp", m: "Leg Press (IPLP3)", max: 180, mult: 2 }, { b: "tg", m: "Leg Press", max: 190, st: 10 }] },
     { k: "leg-ext", n: "Prostowanie nóg", g: "Nogi", mv: "legext",
       pr: ["czworoglowy"], se: [],
-      v: [{ b: "insp", m: "Leg Extension (IPLE33)", max: 110 }, { b: "tg", m: "Leg Extension", max: 95 }] },
+      v: [{ b: "insp", m: "Leg Extension (IPLE33)", max: 108 }, { b: "tg", m: "Leg Extension", max: 95 }] },
     { k: "leg-curl", n: "Uginanie nóg", g: "Nogi", mv: "legcurl",
       pr: ["dwuglowy"], se: ["lydki"],
-      v: [{ b: "insp", m: "Leg Curl (IPLC3)", max: 110 }, { b: "tg", m: "Leg Curl", max: 95 }] },
+      v: [{ b: "insp", m: "Leg Curl (IPLC3)", max: 108 }, { b: "tg", m: "Leg Curl", max: 95 }] },
     { k: "abduction", n: "Odwodzenie nóg", g: "Nogi", mv: "hip",
       pr: ["odwodziciele"], se: ["posladki"],
       v: [{ b: "insp", m: "Abduction (IPAA4)", max: 90 }, { b: "tg", m: "Abductor", max: 75 }] },
@@ -833,8 +837,39 @@
     return null;
   }
   function buildStack(v, inspStep) {
-    var step = v.b === "insp" ? inspStep : BRANDS[v.b].step;
+    var step = v.b === "insp" ? inspStep * (v.mult || 1) : (v.st || BRANDS[v.b].step);
     return range(step, v.max, step);
+  }
+  function nearestIdx(stack, w) {
+    if (w === null || w === undefined || !stack.length) return 0;
+    var best = 0, d = Infinity;
+    for (var i = 0; i < stack.length; i++) {
+      var dd = Math.abs(stack[i] - w);
+      if (dd < d) { d = dd; best = i; }
+    }
+    return best;
+  }
+  /* przeliczenie stosów istniejących kart na nowy krok — poziom ląduje
+     na najbliższym ciężarze, więc historia i postęp zostają */
+  function rebuildStacks(inspStep) {
+    var n = 0;
+    state.machines.forEach(function (m) {
+      var c = exOf(m);
+      if (!c) return;
+      syncVariant(m);
+      m.variants.forEach(function (v) {
+        var cv = null;
+        for (var i = 0; i < c.v.length; i++) if (c.v[i].b === v.b) cv = c.v[i];
+        if (!cv) return;
+        var oldW = v.stack.length ? v.stack[Math.min(v.level || 0, v.stack.length - 1)] : null;
+        v.stack = buildStack(cv, inspStep);
+        v.level = nearestIdx(v.stack, oldW);
+      });
+      var av = variant(m);
+      if (av) { m.stack = av.stack.slice(); m.level = av.level; }
+      n++;
+    });
+    return n;
   }
   function fromCatalog(c, brands, inspStep) {
     var vs = c.v.filter(function (v) { return brands.indexOf(v.b) >= 0; });
@@ -864,7 +899,7 @@
   }
 
   /* Zestaw startowy — używany tylko gdy nie ma jeszcze żadnych zapisanych danych. */
-  var DEFAULTS = CATALOG.map(function (c) { return fromCatalog(c, ["insp", "tg"], 2.25); });
+  var DEFAULTS = CATALOG.map(function (c) { return fromCatalog(c, ["insp", "tg"], INSP_STEP); });
 
   /* Trzy zestawy ćwiczeń — stała trójka, użytkownik zmienia nazwy i zawartość.
      Zestaw to wybrane maszyny w ustalonej kolejności; maszyna może być w kilku. */
@@ -1280,7 +1315,7 @@
 
   /* ---------- katalog maszyn ---------- */
   function openCatalog() {
-    var step = 2.25;
+    var step = INSP_STEP;
     var brands = ["insp", "tg"];
     var have = {};
     state.machines.forEach(function (m) {
@@ -1307,7 +1342,9 @@
           return '<button type="button" class="chip set" data-step="' + o.v + '" aria-pressed="' +
             (o.v === step) + '">' + o.label + '<span class="chip-n">' + o.note + "</span></button>";
         }).join("") +
-      '</div><span class="hint">Maszyny Inspiration przeskakują co 5 lb — stąd 2,25 kg. Technogym: co 5 kg.</span></div>' +
+      '</div><span class="hint">Płytka w Inspiration to 10 lb = 4,5 kg; pół płytki dokłada się ' +
+        "przełącznikiem Lock N Load. Leg Press ma płytki 20 lb, więc krok jest tam dwa razy większy. " +
+        "Technogym: co 5 kg, Leg Press co 10 kg.</span></div>" +
       '<div id="c-body"></div>' +
       '<div class="sheet-actions">' +
         '<button class="btn" id="c-cancel">Anuluj</button>' +
@@ -1392,7 +1429,7 @@
 
   /* ---------- menu: katalog i zerowanie danych ---------- */
   function freshStart() {
-    state.machines = CATALOG.map(function (c) { return fromCatalog(c, ["insp", "tg"], 2.25); });
+    state.machines = CATALOG.map(function (c) { return fromCatalog(c, ["insp", "tg"], INSP_STEP); });
     state.sets = starterSets(state.machines);
     openHist = {};
     openInfo = {};
@@ -1407,7 +1444,15 @@
       '<div class="grab"></div><h3>Dane</h3>' +
       '<p class="hint" style="margin:-8px 0 14px">Wszystko siedzi w tym telefonie — nic nie wychodzi na żaden serwer. ' +
         "Masz teraz " + state.machines.length + (state.machines.length === 1 ? " ćwiczenie." : " ćwiczeń.") + "</p>" +
-      '<button class="btn wide" id="m-cat" style="margin-bottom:10px">Dołóż z katalogu ćwiczeń</button>' +
+      '<button class="btn wide" id="m-cat" style="margin-bottom:14px">Dołóż z katalogu ćwiczeń</button>' +
+      '<div class="field"><label>Krok stosu Inspiration</label><div class="setpick" id="r-step">' +
+        INSP_STEPS.map(function (o) {
+          return '<button type="button" class="chip set" data-step="' + o.v + '" aria-pressed="' +
+            (o.v === INSP_STEP) + '">' + o.label + '<span class="chip-n">' + o.note + "</span></button>";
+        }).join("") + "</div></div>" +
+      '<button class="btn wide" id="m-rebuild" style="margin-bottom:14px">Przelicz stosy wg katalogu</button>' +
+      '<p class="hint" style="margin:-8px 0 16px">Przestawia obciążenia na wybrany krok, a poziom ustawia ' +
+        "na najbliższy ciężar. Historia, zestawy i własne maszyny zostają nietknięte.</p>" +
       '<button class="btn wide danger" id="m-reset">Wyzeruj dane i zacznij od zera</button>' +
       '<p class="hint" style="margin:9px 0 0">Zerowanie kasuje wszystkie ćwiczenia, poziomy, historię i zestawy, ' +
         "a potem zaciąga cały katalog od nowa. Tego nie da się cofnąć.</p>" +
@@ -1417,6 +1462,21 @@
     scrim.addEventListener("click", function (e) { if (e.target === scrim) close(); });
     scrim.querySelector("#m-close").addEventListener("click", close);
     scrim.querySelector("#m-cat").addEventListener("click", function () { close(); openCatalog(); });
+    var rStep = INSP_STEP;
+    scrim.querySelector("#r-step").addEventListener("click", function (e) {
+      var b = e.target.closest(".chip");
+      if (!b) return;
+      rStep = parseFloat(b.getAttribute("data-step"));
+      var chips = scrim.querySelectorAll("#r-step .chip");
+      for (var i = 0; i < chips.length; i++) chips[i].setAttribute("aria-pressed", String(chips[i] === b));
+      buzz();
+    });
+    scrim.querySelector("#m-rebuild").addEventListener("click", function () {
+      var n = rebuildStacks(rStep);
+      if (!n) { toast("Brak ćwiczeń z katalogu do przeliczenia"); return; }
+      save(); close(); render();
+      toast("Przeliczono " + n + (n === 1 ? " ćwiczenie" : n < 5 ? " ćwiczenia" : " ćwiczeń"));
+    });
     scrim.querySelector("#m-reset").addEventListener("click", function () {
       if (!confirm("Skasować wszystkie dane i zacząć od nowa z pełnym katalogiem?")) return;
       if (!confirm("Na pewno? Historia i zestawy przepadną bezpowrotnie.")) return;
