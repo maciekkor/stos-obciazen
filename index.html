@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Prosty tracker obciążeń na maszynach siłowych — widzisz, ile ustawić, jednym dotknięciem wchodzisz na kolejny poziom.">
+<meta name="theme-color" content="#E7EAEE" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131619" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Stos">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Stos Obciążeń</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+
+  /* reset — na GitHub Pages nie ma warstwy hosta, więc podstawy ustawiamy sami */
+  html { -webkit-text-size-adjust: 100%; }
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg: #E7EAEE;
+    --surface: #FFFFFF;
+    --surface-2: #F0F2F5;
+    --line: #D2D8E0;
+    --line-strong: #B9C2CC;
+    --ink: #14181D;
+    --muted: #5D6673;
+    --accent: #B4441F;
+    --accent-ink: #FFFFFF;
+    --good: #24704A;
+    --good-soft: #DCEDE3;
+    --shadow: 0 1px 2px rgba(20, 24, 29, .06), 0 6px 18px rgba(20, 24, 29, .07);
+    --bar-h: 62px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131619; --surface: #1D2126; --surface-2: #262B31;
+      --line: #333A42; --line-strong: #47505A;
+      --ink: #EDF0F3; --muted: #98A2AD;
+      --accent: #E2703F; --accent-ink: #1A0D07;
+      --good: #63C08A; --good-soft: #1E3A2B;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131619; --surface: #1D2126; --surface-2: #262B31;
+    --line: #333A42; --line-strong: #47505A;
+    --ink: #EDF0F3; --muted: #98A2AD;
+    --accent: #E2703F; --accent-ink: #1A0D07;
+    --good: #63C08A; --good-soft: #1E3A2B;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { overscroll-behavior-y: contain; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 12px calc(var(--bar-h) + 34px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ---------- nagłówek ---------- */
+  header.top {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-inner {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 12px 16px 11px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h1 {
+    font-family: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+    font-size: 26px;
+    letter-spacing: .04em;
+    line-height: 1;
+    margin: 0;
+    flex: 1;
+  }
+  .score {
+    font-size: 12px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .score b { color: var(--good); font-weight: 600; }
+  .bar {
+    height: 3px;
+    background: var(--line);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .bar > i { display: block; height: 100%; background: var(--good); transition: width .2s ease; }
+
+  /* ---------- karta ---------- */
+  .list { display: grid; gap: 12px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 13px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card.today { border-color: var(--good); }
+
+  .card-head { display: flex; align-items: flex-start; gap: 8px; }
+  .card-head h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.25;
+    flex: 1;
+    overflow-wrap: anywhere;
+  }
+  .meta {
+    margin: 4px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .tag {
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+  .when.fresh { color: var(--good); font-weight: 500; }
+
+  .icon {
+    flex: 0 0 auto;
+    width: 44px; height: 44px;
+    margin: -8px -8px 0 0;
+    display: grid; place-items: center;
+    border: 0; border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 17px; line-height: 1;
+    cursor: pointer;
+  }
+  .icon:active { background: var(--surface-2); color: var(--ink); }
+
+  /* stepper — główny element pod kciuk */
+  .stepper {
+    display: grid;
+    grid-template-columns: 76px 1fr 76px;
+    gap: 8px;
+  }
+  .step {
+    font-family: "Bebas Neue", Impact, sans-serif;
+    font-size: 34px;
+    line-height: 1;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    color: var(--ink);
+    border-radius: 13px;
+    cursor: pointer;
+    min-height: 68px;
+    padding: 0;
+  }
+  .step:active:not(:disabled) { background: var(--line); }
+  .step:disabled { opacity: .3; }
+  .step.up { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .step.up:active:not(:disabled) { filter: brightness(.9); background: var(--accent); }
+
+  .readout {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 5px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+  }
+  .num {
+    font-family: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+    font-size: 52px;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+  .unit { font-size: 14px; color: var(--muted); font-weight: 500; }
+  .card.unused .num, .card.unused .unit { color: var(--muted); }
+
+  .stack { display: flex; gap: 2px; align-items: flex-end; height: 13px; }
+  .plate { flex: 1 1 0; height: 5px; border-radius: 1px; background: var(--line); }
+  .plate.on { background: var(--accent); }
+  .plate.cur { height: 13px; background: var(--accent); }
+
+  .foot { display: flex; align-items: center; gap: 10px; }
+  .lvl {
+    flex: 1;
+    min-height: 44px;
+    font: inherit;
+    font-size: 11.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    background: none; border: 0; padding: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+  .done {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 11px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .done:active { background: var(--surface-2); }
+  .card.today .done { background: var(--good-soft); border-color: var(--good-soft); color: var(--good); }
+
+  .hist {
+    border-top: 1px dashed var(--line);
+    padding-top: 10px;
+    display: grid; gap: 6px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .hist-row { display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
+  .hist-row b { color: var(--ink); font-weight: 600; }
+  .hist-empty { font-style: italic; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 10px; }
+
+  /* ---------- dolny pasek ---------- */
+  .dock {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 30;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 16px rgba(20, 24, 29, .07);
+  }
+  .dock-inner {
+    max-width: 480px;
+    margin: 0 auto;
+    height: var(--bar-h);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px 0 4px;
+  }
+  .chips {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 0 6px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    font: inherit;
+    font-size: 13.5px;
+    min-height: 40px;
+    padding: 0 15px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--ink); border-color: var(--ink);
+    color: var(--surface); font-weight: 500;
+  }
+  .fab {
+    flex: 0 0 auto;
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    border: 0;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: "Bebas Neue", Impact, sans-serif;
+    font-size: 28px; line-height: 1;
+    cursor: pointer;
+  }
+  .fab:active { filter: brightness(.9); }
+
+  /* ---------- arkusz edycji ---------- */
+  .scrim {
+    position: fixed; inset: 0;
+    background: rgba(10, 13, 16, .55);
+    z-index: 50;
+    display: grid;
+    align-items: end;
+    justify-items: center;
+  }
+  .sheet {
+    background: var(--surface);
+    width: 100%;
+    max-width: 480px;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+  .grab { width: 38px; height: 4px; border-radius: 2px; background: var(--line-strong); margin: 0 auto 12px; }
+  .sheet h3 {
+    margin: 0 0 16px;
+    font-family: "Bebas Neue", Impact, sans-serif;
+    font-size: 25px; font-weight: 400; letter-spacing: .04em;
+  }
+  .field { display: grid; gap: 6px; margin-bottom: 15px; }
+  .field > label, .gen label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); font-weight: 600;
+  }
+  input, select, textarea {
+    font: inherit;
+    font-size: 16px; /* 16px = telefon nie przybliża pola przy wpisywaniu */
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    padding: 12px;
+    width: 100%;
+  }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible,
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .hint { font-size: 12.5px; color: var(--muted); }
+  .gen {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin: -6px 0 10px;
+  }
+  .gen > div { display: grid; gap: 4px; }
+  .gen-run {
+    grid-column: 1 / -1;
+    font: inherit; font-size: 14px;
+    min-height: 46px;
+    border-radius: 11px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .gen-run:active { background: var(--line); }
+
+  .sheet-actions { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+  .btn {
+    font: inherit; font-size: 16px; font-weight: 500;
+    min-height: 50px; padding: 0 18px;
+    border-radius: 12px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); flex: 1; }
+  .btn.danger { color: var(--accent); }
+  .btn.wide { width: 100%; }
+
+  /* ---------- pasek „na ekran główny" ---------- */
+  .install {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--muted);
+    box-shadow: var(--shadow);
+  }
+  .install b { color: var(--ink); font-weight: 600; }
+  .install button {
+    flex: 0 0 auto;
+    border: 0; background: transparent;
+    color: var(--muted);
+    font-size: 18px; line-height: 1;
+    width: 32px; height: 32px;
+    margin: -4px -6px 0 0;
+    cursor: pointer;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--bar-h) + 16px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--bg);
+    padding: 10px 17px;
+    border-radius: 999px;
+    font-size: 14px;
+    z-index: 60;
+    box-shadow: var(--shadow);
+    max-width: calc(100% - 32px);
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <h1>Karta obciążeń</h1>
+    <div class="score" id="score"></div>
+  </div>
+  <div class="bar"><i id="barfill" style="width:0%"></i></div>
+</header>
+
+<div class="wrap">
+  <div id="install-slot"></div>
+  <main class="list" id="list"></main>
+</div>
+
+<nav class="dock" aria-label="Filtr i dodawanie">
+  <div class="dock-inner">
+    <div class="chips" id="chips"></div>
+    <button class="fab" id="add" aria-label="Dodaj maszynę">+</button>
+  </div>
+</nav>
+
+<script>
+(function () {
+  "use strict";
+
+  var GROUPS = ["Nogi", "Plecy", "Klatka", "Barki", "Ramiona", "Brzuch", "Cardio", "Inne"];
+  var LS_KEY = "stos-obciazen-v1";
+  var LS_HINT = "stos-obciazen-hint";
+
+  function range(from, to, step) {
+    var out = [], v = from;
+    while (v <= to + 1e-9) { out.push(Math.round(v * 100) / 100); v += step; }
+    return out;
+  }
+  function uid() { return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  /* Zestaw startowy — używany tylko gdy nie ma jeszcze żadnych zapisanych danych. */
+  var DEFAULTS = [
+    { name: "Wyciąg górny", group: "Plecy", stack: range(5, 100, 5) },
+    { name: "Wioślarz siedząc", group: "Plecy", stack: range(5, 100, 5) },
+    { name: "Prostownik grzbietu", group: "Plecy", stack: range(5, 70, 5) },
+    { name: "Wyciskanie siedząc", group: "Klatka", stack: range(5, 90, 5) },
+    { name: "Rozpiętki (butterfly)", group: "Klatka", stack: range(5, 75, 5) },
+    { name: "Wyciskanie nad głowę", group: "Barki", stack: range(5, 70, 5) },
+    { name: "Wypychanie nóg", group: "Nogi", stack: range(10, 200, 10) },
+    { name: "Prostowanie nóg", group: "Nogi", stack: range(5, 90, 5) },
+    { name: "Uginanie nóg", group: "Nogi", stack: range(5, 90, 5) },
+    { name: "Przywodziciele", group: "Nogi", stack: range(5, 80, 5) },
+    { name: "Triceps na wyciągu", group: "Ramiona", stack: range(5, 70, 5) },
+    { name: "Biceps maszyna", group: "Ramiona", stack: range(5, 60, 5) },
+    { name: "Brzuch maszyna", group: "Brzuch", stack: range(5, 80, 5) }
+  ].map(function (m) {
+    return { id: uid(), name: m.name, group: m.group, stack: m.stack, level: 0, lastAt: null, history: [] };
+  });
+
+  var state = { machines: [] };
+  var filter = "all";
+  var openHist = {};
+  var editing = null;
+
+  /* ---------- czas ---------- */
+  function dayKey(iso) {
+    var d = new Date(iso);
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+  function isToday(iso) { return !!iso && dayKey(iso) === dayKey(new Date().toISOString()); }
+  function daysAgo(iso) {
+    var a = new Date(iso); a.setHours(0, 0, 0, 0);
+    var b = new Date(); b.setHours(0, 0, 0, 0);
+    return Math.round((b - a) / 86400000);
+  }
+  function ago(iso) {
+    if (!iso) return "brak historii";
+    var n = daysAgo(iso);
+    if (n <= 0) return "dziś";
+    if (n === 1) return "wczoraj";
+    if (n < 7) return n + " dni temu";
+    if (n < 14) return "tydzień temu";
+    if (n < 31) return Math.round(n / 7) + " tyg. temu";
+    if (n < 365) return Math.round(n / 30) + " mies. temu";
+    return "ponad rok temu";
+  }
+  function shortDate(iso) {
+    var d = new Date(iso);
+    return ("0" + d.getDate()).slice(-2) + "." + ("0" + (d.getMonth() + 1)).slice(-2) + "." + String(d.getFullYear()).slice(-2);
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmt(n) { return (Math.round(n * 100) / 100).toString().replace(".", ","); }
+  function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms || 8); } catch (e) {} }
+
+  /* ---------- zapis ---------- */
+  function payload() { return { machines: state.machines, updatedAt: new Date().toISOString() }; }
+  var warned = false;
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(payload())); }
+    catch (e) {
+      if (!warned) { warned = true; toast("Przeglądarka blokuje zapis — wyłącz tryb prywatny"); }
+    }
+  }
+  function save() { saveLocal(); }   // wszystko zostaje w tym telefonie
+  var toastTimer = null;
+  function toast(msg) {
+    var old = document.querySelector(".toast");
+    if (old) old.remove();
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.setAttribute("role", "status");
+    el.textContent = msg;
+    document.body.appendChild(el);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.remove(); }, 2800);
+  }
+
+  /* ---------- logika ---------- */
+  function find(id) {
+    for (var i = 0; i < state.machines.length; i++) if (state.machines[i].id === id) return state.machines[i];
+    return null;
+  }
+  function levelOf(m) { return Math.min(Math.max(m.level || 0, 0), Math.max(m.stack.length - 1, 0)); }
+  function weightOf(m) { return m.stack.length ? m.stack[levelOf(m)] : null; }
+  function stamp(m) {
+    var now = new Date().toISOString();
+    m.lastAt = now;
+    m.history = m.history || [];
+    var last = m.history[m.history.length - 1];
+    if (last && dayKey(last.t) === dayKey(now)) { last.w = weightOf(m); last.t = now; }
+    else m.history.push({ w: weightOf(m), t: now });
+    if (m.history.length > 10) m.history = m.history.slice(-10);
+  }
+  function move(m, dir) {
+    if (!m.stack.length) return false;
+    var next = Math.min(Math.max(levelOf(m) + dir, 0), m.stack.length - 1);
+    if (next === levelOf(m)) return false;
+    m.level = next;
+    stamp(m);
+    save();
+    return true;
+  }
+
+  /* ---------- widok ---------- */
+  function visible() {
+    return state.machines.filter(function (m) { return filter === "all" || m.group === filter; });
+  }
+  function renderChips() {
+    var used = [];
+    state.machines.forEach(function (m) { if (used.indexOf(m.group) < 0) used.push(m.group); });
+    used.sort(function (a, b) { return GROUPS.indexOf(a) - GROUPS.indexOf(b); });
+    if (filter !== "all" && used.indexOf(filter) < 0) filter = "all";
+    var html = ['<button class="chip" data-g="all" aria-pressed="' + (filter === "all") + '">Wszystko</button>'];
+    used.forEach(function (g) {
+      html.push('<button class="chip" data-g="' + esc(g) + '" aria-pressed="' + (filter === g) + '">' + esc(g) + "</button>");
+    });
+    document.getElementById("chips").innerHTML = html.join("");
+  }
+  function renderScore() {
+    var done = state.machines.filter(function (m) { return isToday(m.lastAt); }).length;
+    var n = state.machines.length;
+    document.getElementById("score").innerHTML = n ? "dziś <b>" + done + "</b> / " + n : "";
+    document.getElementById("barfill").style.width = n ? (done / n * 100) + "%" : "0%";
+  }
+  function cardHTML(m) {
+    var w = weightOf(m), lv = levelOf(m), today = isToday(m.lastAt);
+    var plates = m.stack.map(function (_, i) {
+      return '<i class="plate' + (i === lv ? " cur" : (i < lv ? " on" : "")) + '"></i>';
+    }).join("");
+    var hist = "";
+    if (openHist[m.id]) {
+      var rows = (m.history || []).slice().reverse().map(function (h) {
+        return '<div class="hist-row"><span>' + esc(shortDate(h.t)) + "</span><b>" + fmt(h.w) + " kg</b></div>";
+      });
+      hist = '<div class="hist">' + (rows.length ? rows.join("") : '<div class="hist-empty">Jeszcze nic tu nie ma.</div>') + "</div>";
+    }
+    return '<article class="card' + (today ? " today" : "") + (m.lastAt ? "" : " unused") + '" data-id="' + esc(m.id) + '">' +
+      '<div class="card-head"><div style="flex:1"><h2>' + esc(m.name) + "</h2>" +
+        '<p class="meta"><span class="tag">' + esc(m.group) + "</span>" +
+        '<span class="when' + (today ? " fresh" : "") + '">' + esc(ago(m.lastAt)) + "</span></p></div>" +
+        '<button class="icon" data-act="edit" aria-label="Edytuj">✎</button></div>' +
+      '<div class="stepper">' +
+        '<button class="step" data-act="dec" aria-label="Niższy poziom"' + (lv <= 0 ? " disabled" : "") + ">−</button>" +
+        '<div class="readout"><span class="num">' + (w === null ? "—" : fmt(w)) + '</span><span class="unit">kg</span></div>' +
+        '<button class="step up" data-act="inc" aria-label="Wyższy poziom"' + (lv >= m.stack.length - 1 ? " disabled" : "") + ">+</button>" +
+      "</div>" +
+      '<div class="stack" aria-hidden="true">' + plates + "</div>" +
+      '<div class="foot">' +
+        '<button class="lvl" data-act="hist">poziom ' + (lv + 1) + " / " + m.stack.length + " · historia</button>" +
+        '<button class="done" data-act="done">' + (today ? "✓ zrobione" : "Zrobione dziś") + "</button>" +
+      "</div>" + hist + "</article>";
+  }
+  function render() {
+    renderChips();
+    renderScore();
+    var items = visible();
+    document.getElementById("list").innerHTML = items.length
+      ? items.map(cardHTML).join("")
+      : '<p class="empty">Brak maszyn w tej partii.</p>';
+  }
+  /* aktualizacja jednej karty bez przebudowy przycisków — płynne trzymanie palca */
+  function refreshCard(card, m) {
+    var lv = levelOf(m), w = weightOf(m), today = isToday(m.lastAt);
+    card.querySelector(".num").textContent = w === null ? "—" : fmt(w);
+    var plates = card.querySelectorAll(".plate");
+    for (var i = 0; i < plates.length; i++) {
+      plates[i].className = "plate" + (i === lv ? " cur" : (i < lv ? " on" : ""));
+    }
+    card.querySelector(".lvl").textContent = "poziom " + (lv + 1) + " / " + m.stack.length + " · historia";
+    card.querySelector('[data-act="dec"]').disabled = lv <= 0;
+    card.querySelector('[data-act="inc"]').disabled = lv >= m.stack.length - 1;
+    card.classList.toggle("today", today);
+    card.classList.toggle("unused", !m.lastAt);
+    var when = card.querySelector(".when");
+    when.textContent = ago(m.lastAt);
+    when.classList.toggle("fresh", today);
+    card.querySelector(".done").textContent = today ? "✓ zrobione" : "Zrobione dziś";
+    renderScore();
+  }
+
+  /* ---------- edytor ---------- */
+  function openEditor(id) {
+    var m = id ? find(id) : { id: null, name: "", group: "Nogi", stack: range(5, 100, 5), level: 0, lastAt: null, history: [] };
+    if (!m) return;
+    editing = id || "new";
+    var scrim = document.createElement("div");
+    scrim.className = "scrim";
+    scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Ustawienia maszyny">' +
+      '<div class="grab"></div>' +
+      "<h3>" + (id ? "Maszyna" : "Nowa maszyna") + "</h3>" +
+      '<div class="field"><label for="f-name">Nazwa</label><input id="f-name" value="' + esc(m.name) + '" placeholder="np. Wyciąg górny" autocomplete="off"></div>' +
+      '<div class="field"><label for="f-group">Partia</label><select id="f-group">' +
+        GROUPS.map(function (g) { return '<option value="' + esc(g) + '"' + (g === m.group ? " selected" : "") + ">" + esc(g) + "</option>"; }).join("") +
+      "</select></div>" +
+      '<div class="field"><label for="f-stack">Obciążenia (kg)</label>' +
+        '<textarea id="f-stack" spellcheck="false" inputmode="decimal">' + esc(m.stack.map(fmt).join(", ")) + "</textarea>" +
+        '<span class="hint">Kolejne poziomy stosu, po przecinku — dokładnie jak na maszynie.</span></div>' +
+      '<div class="gen">' +
+        '<div><label for="g-from">Od</label><input id="g-from" type="number" inputmode="decimal" value="5"></div>' +
+        '<div><label for="g-to">Do</label><input id="g-to" type="number" inputmode="decimal" value="100"></div>' +
+        '<div><label for="g-step">Co</label><input id="g-step" type="number" inputmode="decimal" value="5"></div>' +
+        '<button type="button" class="gen-run" id="g-run">Wypełnij listę</button>' +
+      "</div>" +
+      '<div class="sheet-actions">' +
+        '<button class="btn" id="f-cancel">Anuluj</button>' +
+        '<button class="btn primary" id="f-save">Zapisz</button>' +
+        (id ? '<button class="btn danger wide" id="f-del">Usuń maszynę</button>' : "") +
+      "</div></div>";
+    document.body.appendChild(scrim);
+    var nameInput = scrim.querySelector("#f-name");
+    if (!id) nameInput.focus();
+
+    scrim.addEventListener("click", function (e) { if (e.target === scrim) close(); });
+    scrim.querySelector("#g-run").addEventListener("click", function () {
+      var a = parseFloat(String(scrim.querySelector("#g-from").value).replace(",", "."));
+      var b = parseFloat(String(scrim.querySelector("#g-to").value).replace(",", "."));
+      var s = parseFloat(String(scrim.querySelector("#g-step").value).replace(",", "."));
+      if (!isFinite(a) || !isFinite(b) || !isFinite(s) || s <= 0 || b < a) { toast("Sprawdź wartości od / do / co"); return; }
+      if ((b - a) / s > 80) { toast("Za dużo poziomów — zwiększ krok"); return; }
+      scrim.querySelector("#f-stack").value = range(a, b, s).map(fmt).join(", ");
+      buzz();
+    });
+    scrim.querySelector("#f-cancel").addEventListener("click", close);
+    if (id) scrim.querySelector("#f-del").addEventListener("click", function () {
+      if (!confirm("Usunąć „" + m.name + "” razem z historią?")) return;
+      state.machines = state.machines.filter(function (x) { return x.id !== id; });
+      save(); close(); render();
+    });
+    scrim.querySelector("#f-save").addEventListener("click", function () {
+      var name = nameInput.value.trim();
+      var stack = String(scrim.querySelector("#f-stack").value)
+        .split(/[,;\n\s]+/).map(function (v) { return parseFloat(v.replace(",", ".")); })
+        .filter(function (v) { return isFinite(v) && v >= 0; });
+      stack.sort(function (a, b) { return a - b; });
+      if (!name) { toast("Wpisz nazwę maszyny"); nameInput.focus(); return; }
+      if (!stack.length) { toast("Podaj przynajmniej jedno obciążenie"); return; }
+      var group = scrim.querySelector("#f-group").value;
+      if (id) {
+        var t = find(id), oldW = weightOf(t);
+        t.name = name; t.group = group; t.stack = stack;
+        var idx = stack.indexOf(oldW);
+        t.level = idx >= 0 ? idx : Math.min(levelOf(t), stack.length - 1);
+      } else {
+        state.machines.push({ id: uid(), name: name, group: group, stack: stack, level: 0, lastAt: null, history: [] });
+      }
+      save(); close(); render();
+    });
+    function close() {
+      editing = null;
+      scrim.remove();
+      document.removeEventListener("keydown", onKey);
+    }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+  }
+
+  /* ---------- dotyk: stuknięcie i przytrzymanie ---------- */
+  var list = document.getElementById("list");
+  var hold = null;
+
+  function startHold(btn, card, m, dir) {
+    var delay = setTimeout(function repeat() {
+      if (move(m, dir)) { refreshCard(card, m); buzz(5); }
+      hold.timer = setTimeout(repeat, 130);
+    }, 500);
+    hold = { timer: delay, btn: btn };
+  }
+  function endHold() {
+    if (!hold) return;
+    clearTimeout(hold.timer);
+    hold = null;
+  }
+
+  list.addEventListener("pointerdown", function (e) {
+    var btn = e.target.closest('[data-act="inc"], [data-act="dec"]');
+    if (!btn || btn.disabled) return;
+    var card = btn.closest(".card");
+    var m = find(card.getAttribute("data-id"));
+    if (!m) return;
+    var dir = btn.getAttribute("data-act") === "inc" ? 1 : -1;
+    if (move(m, dir)) { refreshCard(card, m); buzz(); }
+    startHold(btn, card, m, dir);
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) {
+    list.addEventListener(ev, endHold);
+  });
+  window.addEventListener("blur", endHold);
+
+  list.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    var act = btn.getAttribute("data-act");
+    if (act === "inc" || act === "dec") return; // obsłużone przy dotknięciu
+    var card = btn.closest(".card");
+    var m = find(card.getAttribute("data-id"));
+    if (!m) return;
+    if (act === "done") { stamp(m); save(); refreshCard(card, m); buzz(); }
+    else if (act === "hist") { openHist[m.id] = !openHist[m.id]; render(); }
+    else if (act === "edit") openEditor(m.id);
+  });
+  document.getElementById("chips").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip");
+    if (!b) return;
+    filter = b.getAttribute("data-g");
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  document.getElementById("add").addEventListener("click", function () { openEditor(null); });
+
+  /* ---------- podpowiedź: dodaj do ekranu głównego ---------- */
+  function installHint() {
+    var standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    var touch = window.matchMedia("(pointer: coarse)").matches;
+    var seen = false;
+    try { seen = localStorage.getItem(LS_HINT) === "1"; } catch (e) {}
+    if (standalone || seen || !touch) return;
+    var ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    var slot = document.getElementById("install-slot");
+    var el = document.createElement("div");
+    el.className = "install";
+    el.innerHTML = "<div><b>Miej to pod ręką na siłowni.</b> " +
+      (ios ? "Udostępnij ⬆ → „Dodaj do ekranu początkowego”."
+           : "Menu przeglądarki ⋮ → „Dodaj do ekranu głównego”.") +
+      " Otworzy się jak zwykła aplikacja, działa też bez zasięgu.</div>" +
+      '<button aria-label="Zamknij podpowiedź">×</button>';
+    el.querySelector("button").addEventListener("click", function () {
+      try { localStorage.setItem(LS_HINT, "1"); } catch (e) {}
+      el.remove();
+    });
+    slot.appendChild(el);
+  }
+
+  /* ---------- start ---------- */
+  function adopt(data) {
+    if (!data || !Array.isArray(data.machines)) return false;
+    state.machines = data.machines.map(function (m) {
+      return {
+        id: m.id || uid(),
+        name: String(m.name || "Maszyna"),
+        group: GROUPS.indexOf(m.group) >= 0 ? m.group : "Inne",
+        stack: Array.isArray(m.stack) ? m.stack.filter(function (v) { return typeof v === "number" && isFinite(v); }) : [],
+        level: typeof m.level === "number" ? m.level : 0,
+        lastAt: m.lastAt || null,
+        history: Array.isArray(m.history) ? m.history : []
+      };
+    });
+    return true;
+  }
+
+  var booted = false;
+  try {
+    var cached = localStorage.getItem(LS_KEY);
+    if (cached) booted = adopt(JSON.parse(cached));
+  } catch (e) {}
+  if (!booted) state.machines = DEFAULTS;
+  render();
+  installHint();
+})();
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+</script>
+
+</body>
+</html>
