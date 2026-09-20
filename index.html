@@ -116,6 +116,7 @@
     white-space: nowrap;
   }
   .score b { color: var(--good); font-weight: 600; }
+  .top-menu { margin: -8px -10px -8px -4px; font-size: 21px; }
   .bar {
     height: 3px;
     background: var(--line);
@@ -497,6 +498,46 @@
   .setpick { display: flex; gap: 6px; flex-wrap: wrap; }
   .setpick .chip { min-height: 40px; font-size: 13px; }
 
+  /* ---------- rysunki i panel z opisem ---------- */
+  .info {
+    border-top: 1px dashed var(--line);
+    padding-top: 11px;
+    display: grid;
+    gap: 11px;
+  }
+  .art {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--surface-2);
+    border-radius: 12px;
+    padding: 10px 8px;
+  }
+  .mach { width: 47%; max-width: 150px; height: auto; }
+  .body { width: 47%; max-width: 150px; height: auto; }
+  .mach .mo { fill: var(--line-strong); }
+  .mach .ml { stroke: var(--line-strong); stroke-width: 1.6; fill: none; stroke-linecap: round; }
+  .body .mu { fill: var(--line-strong); }
+  .body .mu.s { fill: var(--accent); fill-opacity: .38; }
+  .body .mu.p { fill: var(--accent); }
+  .body .mt {
+    fill: var(--muted);
+    font-size: 9px;
+    font-family: inherit;
+    text-anchor: middle;
+    letter-spacing: .06em;
+  }
+  .spec { display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
+  .spec-row { display: grid; gap: 1px; }
+  .spec-row b { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .spec-row.cur b { color: var(--accent); }
+  .spec em { font-style: normal; font-variant-numeric: tabular-nums; }
+  .spec .mus { border-top: 1px dashed var(--line); padding-top: 8px; line-height: 1.5; }
+  .spec .mus b { color: var(--ink); }
+  .vsw { display: flex; gap: 6px; flex-wrap: wrap; }
+  .vsw .chip { min-height: 38px; font-size: 13px; }
+
   /* ---------- pasek „na ekran główny" ---------- */
   .install {
     background: var(--surface);
@@ -546,6 +587,7 @@
   <div class="top-inner">
     <h1>Karta obciążeń</h1>
     <div class="score" id="score"></div>
+    <button class="icon top-menu" id="menu" aria-label="Dane i katalog">⋯</button>
   </div>
   <div class="bar"><i id="barfill" style="width:0%"></i></div>
 </header>
@@ -579,39 +621,250 @@
   }
   function uid() { return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-  /* Katalog maszyn Nautilus Inspiration — pełna linia 20 stanowisk.
-     „max” to górny koniec stosu w kg wg danych producenta (Core Health & Fitness):
-     240 lb ≈ 110 kg, 200 lb ≈ 90 kg, Leg Press 400 lb ≈ 180 kg. Stos w maszynie
-     przeskakuje co 5 lb, więc w kg wychodzą wartości zaokrąglone — dlatego
-     obciążenia zostają edytowalne i przy dodawaniu wybiera się krok. */
-  var CATALOG = [
-    { n: "Wyciskanie siedząc (Chest Press)", g: "Klatka", max: 110 },
-    { n: "Rozpiętki / tył barku (Pec Fly – Rear Deltoid)", g: "Klatka", max: 110 },
-    { n: "Wyciskanie nad głowę (Shoulder Press)", g: "Barki", max: 90 },
-    { n: "Unoszenie ramion bokiem (Deltoid Raise)", g: "Barki", max: 90 },
-    { n: "Ściąganie drążka (Lat Pull Down)", g: "Plecy", max: 110 },
-    { n: "Wiosłowanie pionowe (Vertical Row)", g: "Plecy", max: 110 },
-    { n: "Przenoszenie (Pull Over)", g: "Plecy", max: 90 },
-    { n: "Prostownik grzbietu (Back Extension)", g: "Plecy", max: 90 },
-    { n: "Uginanie ramion (Biceps Curl)", g: "Ramiona", max: 90 },
-    { n: "Uginanie oburącz (Bilateral Arm Curl)", g: "Ramiona", max: 90 },
-    { n: "Prostowanie ramion (Triceps Extension)", g: "Ramiona", max: 110 },
-    { n: "Dipy w maszynie (Triceps Dip)", g: "Ramiona", max: 110 },
-    { n: "Brzuch — spięcia (Abdominal Crunch)", g: "Brzuch", max: 90 },
-    { n: "Skręty tułowia (Rotary Torso)", g: "Brzuch", max: 90 },
-    { n: "Wypychanie nóg (Leg Press)", g: "Nogi", max: 180 },
-    { n: "Prostowanie nóg (Leg Extension)", g: "Nogi", max: 110 },
-    { n: "Uginanie nóg (Leg Curl)", g: "Nogi", max: 110 },
-    { n: "Odwodzenie / przywodzenie (Abduction – Adduction)", g: "Nogi", max: 90 },
-    { n: "Pośladki (Glute Press)", g: "Nogi", max: 90 },
-    { n: "Wyciąg dwustronny (Dual Adjustable Pulley)", g: "Inne", max: 90 }
+  /* ---------- katalog ćwiczeń ----------
+     Jedna pozycja = jedno ćwiczenie, a pod nim warianty maszyn u różnych producentów.
+     Górne końce stosów wg danych producentów:
+       Nautilus Inspiration (Core Health & Fitness) — 240 lb ≈ 110 kg, 200 lb ≈ 90 kg,
+         Leg Press 400 lb ≈ 180 kg; stos przeskakuje co 5 lb = 2,25 kg.
+       Technogym Selection — stosy metryczne, krok 5 kg.
+     Konkretny egzemplarz bywa inny (wersja „plus”, dokładki), więc wszystko zostaje
+     edytowalne. */
+  var BRANDS = {
+    insp: { name: "Nautilus Inspiration", short: "Inspiration", step: 2.25 },
+    tg: { name: "Technogym Selection", short: "Technogym", step: 5 }
+  };
+  var INSP_STEPS = [
+    { v: 2.25, label: "co 2,25 kg", note: "5 lb" },
+    { v: 4.5, label: "co 4,5 kg", note: "10 lb" },
+    { v: 9, label: "co 9 kg", note: "20 lb" }
   ];
-  function fromCatalog(c, step) {
-    return { id: uid(), name: c.n, group: c.g, stack: range(step, c.max, step), level: 0, lastAt: null, history: [] };
+  var MUSCLES = {
+    klatka: "klatka piersiowa",
+    bark: "barki (przód i bok)",
+    "bark-tyl": "tył barku",
+    czworoboczny: "czworoboczny",
+    lats: "najszerszy grzbietu",
+    prostownik: "prostownik grzbietu",
+    biceps: "biceps",
+    triceps: "triceps",
+    przedramie: "przedramiona",
+    brzuch: "mięśnie brzucha",
+    skosne: "skośne brzucha",
+    posladki: "pośladki",
+    odwodziciele: "odwodziciele",
+    przywodziciele: "przywodziciele",
+    czworoglowy: "czworogłowy uda",
+    dwuglowy: "dwugłowy uda",
+    lydki: "łydki"
+  };
+
+  var CATALOG = [
+    { k: "chest-press", n: "Wyciskanie siedząc", g: "Klatka", mv: "press",
+      pr: ["klatka"], se: ["triceps", "bark"],
+      v: [{ b: "insp", m: "Chest Press (IPVP3)", max: 110 }, { b: "tg", m: "Chest Press", max: 100 }] },
+    { k: "pec-fly", n: "Rozpiętki", g: "Klatka", mv: "fly",
+      pr: ["klatka"], se: ["bark"],
+      v: [{ b: "insp", m: "Pec Fly (IPPF3)", max: 110 }, { b: "tg", m: "Pectoral Machine", max: 90 }] },
+    { k: "rear-delt", n: "Odwrotne rozpiętki (tył barku)", g: "Barki", mv: "fly",
+      pr: ["bark-tyl"], se: ["czworoboczny", "lats"],
+      v: [{ b: "insp", m: "Rear Deltoid (IPPF3)", max: 110 }, { b: "tg", m: "Rear Delt", max: 80 }] },
+    { k: "shoulder-press", n: "Wyciskanie nad głowę", g: "Barki", mv: "press",
+      pr: ["bark"], se: ["triceps"],
+      v: [{ b: "insp", m: "Shoulder Press (IPSP3)", max: 90 }, { b: "tg", m: "Shoulder Press", max: 65 }] },
+    { k: "lateral-raise", n: "Unoszenie ramion bokiem", g: "Barki", mv: "raise",
+      pr: ["bark"], se: ["czworoboczny"],
+      v: [{ b: "insp", m: "Deltoid Raise (IPDR3)", max: 90 }, { b: "tg", m: "Delts Machine", max: 65 }] },
+    { k: "lat-pulldown", n: "Ściąganie drążka", g: "Plecy", mv: "pulldown",
+      pr: ["lats"], se: ["biceps", "czworoboczny"],
+      v: [{ b: "insp", m: "Lat Pull Down (IPPD3)", max: 110 }, { b: "tg", m: "Vertical Traction", max: 100 }] },
+    { k: "row", n: "Wiosłowanie", g: "Plecy", mv: "row",
+      pr: ["lats", "czworoboczny"], se: ["biceps", "bark-tyl"],
+      v: [{ b: "insp", m: "Vertical Row (IPVR3)", max: 110 }, { b: "tg", m: "Low Row", max: 85 }] },
+    { k: "pullover", n: "Przenoszenie", g: "Plecy", mv: "pullover",
+      pr: ["lats"], se: ["klatka", "triceps"],
+      v: [{ b: "insp", m: "Pull Over (IPPO3)", max: 90 }] },
+    { k: "back-ext", n: "Prostownik grzbietu", g: "Plecy", mv: "backext",
+      pr: ["prostownik"], se: ["posladki", "dwuglowy"],
+      v: [{ b: "insp", m: "Back Extension (IPBE3)", max: 90 }, { b: "tg", m: "Lower Back", max: 60 }] },
+    { k: "biceps", n: "Uginanie ramion", g: "Ramiona", mv: "curl",
+      pr: ["biceps"], se: ["przedramie"],
+      v: [{ b: "insp", m: "Biceps Curl (IPBC3)", max: 90 }, { b: "tg", m: "Arm Curl", max: 60 }] },
+    { k: "biceps-bi", n: "Uginanie oburącz", g: "Ramiona", mv: "curl",
+      pr: ["biceps"], se: ["przedramie"],
+      v: [{ b: "insp", m: "Bilateral Arm Curl (IPBA3)", max: 90 }] },
+    { k: "triceps", n: "Prostowanie ramion", g: "Ramiona", mv: "pushdown",
+      pr: ["triceps"], se: [],
+      v: [{ b: "insp", m: "Triceps Extension (IPTE3)", max: 110 }, { b: "tg", m: "Arm Extension", max: 65 }] },
+    { k: "dip", n: "Dipy w maszynie", g: "Ramiona", mv: "dip",
+      pr: ["triceps"], se: ["klatka", "bark"],
+      v: [{ b: "insp", m: "Triceps Dip (IPTD4)", max: 110 }] },
+    { k: "crunch", n: "Brzuch — spięcia", g: "Brzuch", mv: "crunch",
+      pr: ["brzuch"], se: ["skosne"],
+      v: [{ b: "insp", m: "Abdominal Crunch (IPAC3)", max: 90 }, { b: "tg", m: "Abdominal Crunch", max: 65 }] },
+    { k: "torso", n: "Skręty tułowia", g: "Brzuch", mv: "torso",
+      pr: ["skosne"], se: ["brzuch"],
+      v: [{ b: "insp", m: "Rotary Torso (IPRT5)", max: 90 }, { b: "tg", m: "Rotary Torso", max: 65 }] },
+    { k: "leg-press", n: "Wypychanie nóg", g: "Nogi", mv: "legpress",
+      pr: ["czworoglowy", "posladki"], se: ["dwuglowy", "lydki"],
+      v: [{ b: "insp", m: "Leg Press (IPLP3)", max: 180 }, { b: "tg", m: "Leg Press", max: 190 }] },
+    { k: "leg-ext", n: "Prostowanie nóg", g: "Nogi", mv: "legext",
+      pr: ["czworoglowy"], se: [],
+      v: [{ b: "insp", m: "Leg Extension (IPLE33)", max: 110 }, { b: "tg", m: "Leg Extension", max: 95 }] },
+    { k: "leg-curl", n: "Uginanie nóg", g: "Nogi", mv: "legcurl",
+      pr: ["dwuglowy"], se: ["lydki"],
+      v: [{ b: "insp", m: "Leg Curl (IPLC3)", max: 110 }, { b: "tg", m: "Leg Curl", max: 95 }] },
+    { k: "abduction", n: "Odwodzenie nóg", g: "Nogi", mv: "hip",
+      pr: ["odwodziciele"], se: ["posladki"],
+      v: [{ b: "insp", m: "Abduction (IPAA4)", max: 90 }, { b: "tg", m: "Abductor", max: 75 }] },
+    { k: "adduction", n: "Przywodzenie nóg", g: "Nogi", mv: "hip",
+      pr: ["przywodziciele"], se: [],
+      v: [{ b: "insp", m: "Adduction (IPAA4)", max: 90 }, { b: "tg", m: "Adductor", max: 75 }] },
+    { k: "glute", n: "Pośladki", g: "Nogi", mv: "glute",
+      pr: ["posladki"], se: ["dwuglowy", "prostownik"],
+      v: [{ b: "insp", m: "Glute Press (IPGM3)", max: 90 }, { b: "tg", m: "Glute", max: 70 }] },
+    { k: "pulley", n: "Wyciąg dwustronny", g: "Inne", mv: "pulley",
+      pr: [], se: [],
+      v: [{ b: "insp", m: "Dual Adjustable Pulley", max: 90 }, { b: "tg", m: "Pulley", max: 85 }] }
+  ];
+
+  /* ---------- rysunki ----------
+     Sylwetka: przód po lewej, tył po prawej. Każda grupa mięśni to osobny kształt,
+     podświetlany na czerwono (główne) albo półprzezroczyście (wspomagające). */
+  var BODY = {
+    klatka: '<rect x="21" y="27" width="8.5" height="12" rx="3"/><rect x="30.5" y="27" width="8.5" height="12" rx="3"/>',
+    bark: '<ellipse cx="17" cy="28" rx="5.8" ry="5.5"/><ellipse cx="43" cy="28" rx="5.8" ry="5.5"/>',
+    "bark-tyl": '<ellipse cx="89" cy="28" rx="5.8" ry="5.5"/><ellipse cx="115" cy="28" rx="5.8" ry="5.5"/>',
+    czworoboczny: '<path d="M102 19c7 0 12 3 13 9-5-2-9-3-13-3s-8 1-13 3c1-6 6-9 13-9z"/>',
+    lats: '<path d="M99 32v21c-5-1-8-5-9-11-.5-5 3-9 9-10z"/><path d="M105 32v21c5-1 8-5 9-11 .5-5-3-9-9-10z"/>',
+    prostownik: '<rect x="99.5" y="32" width="5" height="29" rx="2.5"/>',
+    biceps: '<rect x="11" y="32" width="6" height="15" rx="3"/><rect x="43" y="32" width="6" height="15" rx="3"/>',
+    triceps: '<rect x="83" y="32" width="6" height="15" rx="3"/><rect x="115" y="32" width="6" height="15" rx="3"/>',
+    przedramie: '<rect x="8.5" y="48" width="5.5" height="16" rx="2.7"/><rect x="46" y="48" width="5.5" height="16" rx="2.7"/>' +
+      '<rect x="80.5" y="48" width="5.5" height="16" rx="2.7"/><rect x="118" y="48" width="5.5" height="16" rx="2.7"/>',
+    brzuch: '<rect x="24.5" y="40" width="11" height="20" rx="3"/>',
+    skosne: '<rect x="20.5" y="41" width="3.5" height="16" rx="1.7"/><rect x="36" y="41" width="3.5" height="16" rx="1.7"/>',
+    posladki: '<rect x="93.5" y="61" width="8" height="13" rx="4"/><rect x="102.5" y="61" width="8" height="13" rx="4"/>',
+    odwodziciele: '<rect x="19.5" y="60" width="4" height="10" rx="2"/><rect x="36.5" y="60" width="4" height="10" rx="2"/>' +
+      '<rect x="90" y="60" width="4" height="10" rx="2"/><rect x="110" y="60" width="4" height="10" rx="2"/>',
+    przywodziciele: '<rect x="27.9" y="70" width="4.2" height="20" rx="2.1"/><rect x="99.9" y="76" width="4.2" height="18" rx="2.1"/>',
+    czworoglowy: '<rect x="21.5" y="68" width="7" height="27" rx="3.5"/><rect x="31.5" y="68" width="7" height="27" rx="3.5"/>',
+    dwuglowy: '<rect x="93.5" y="75" width="7" height="22" rx="3.5"/><rect x="103.5" y="75" width="7" height="22" rx="3.5"/>',
+    lydki: '<rect x="22.5" y="99" width="5.5" height="21" rx="2.7"/><rect x="32" y="99" width="5.5" height="21" rx="2.7"/>' +
+      '<rect x="94.5" y="99" width="5.5" height="21" rx="2.7"/><rect x="104" y="99" width="5.5" height="21" rx="2.7"/>'
+  };
+  function muscleSVG(pr, se) {
+    var out = '<svg class="body" viewBox="0 0 132 134" role="img" aria-label="Pracujące mięśnie">' +
+      '<circle class="mu" cx="30" cy="11" r="7"/><circle class="mu" cx="102" cy="11" r="7"/>' +
+      '<rect class="mu" x="27" y="17" width="6" height="6" rx="2"/><rect class="mu" x="99" y="17" width="6" height="6" rx="2"/>';
+    Object.keys(BODY).forEach(function (k) {
+      var cls = pr.indexOf(k) >= 0 ? "mu p" : (se.indexOf(k) >= 0 ? "mu s" : "mu");
+      out += '<g class="' + cls + '">' + BODY[k] + "</g>";
+    });
+    return out + '<text class="mt" x="30" y="131">przód</text><text class="mt" x="102" y="131">tył</text></svg>';
+  }
+
+  /* Piktogramy maszyn: schemat z boku — stos po lewej, rama i to, co się rusza. */
+  var MACH = {
+    press: '<path class="ml" d="M24 12v34"/><rect class="mo" x="28" y="34" width="17" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="28" y="19" width="3" height="16" rx="1.5"/><path class="ml" d="M33 24h13"/>' +
+      '<circle class="mo" cx="48" cy="24" r="2.5"/><path class="ml" d="M45 37v9"/>',
+    fly: '<path class="ml" d="M24 12v34"/><rect class="mo" x="28" y="34" width="16" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="28" y="19" width="3" height="16" rx="1.5"/>' +
+      '<path class="ml" d="M32 22c9 0 15 5 16 12"/><path class="ml" d="M32 28c6 1 10 5 11 10"/>' +
+      '<circle class="mo" cx="48" cy="34" r="2.5"/>',
+    raise: '<path class="ml" d="M24 12v34"/><rect class="mo" x="28" y="36" width="16" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="28" y="22" width="3" height="14" rx="1.5"/>' +
+      '<path class="ml" d="M33 32l11-7"/><path class="ml" d="M33 34l11 7"/><circle class="mo" cx="45" cy="24" r="2.5"/>',
+    pulldown: '<path class="ml" d="M24 8v38"/><path class="ml" d="M24 10h26"/><path class="ml" d="M50 10v7"/>' +
+      '<path class="ml" d="M43 17h14"/><rect class="mo" x="41" y="34" width="17" height="3" rx="1.5"/>' +
+      '<path class="ml" d="M44 26h11"/>',
+    row: '<path class="ml" d="M24 12v34"/><rect class="mo" x="34" y="34" width="17" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="47" y="19" width="3" height="16" rx="1.5"/><path class="ml" d="M46 26H28"/>' +
+      '<circle class="mo" cx="26" cy="26" r="2.5"/>',
+    pullover: '<path class="ml" d="M24 12v34"/><rect class="mo" x="30" y="34" width="17" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="44" y="20" width="3" height="15" rx="1.5"/>' +
+      '<path class="ml" d="M44 26a12 12 0 0 0-14-6"/><circle class="mo" cx="29" cy="20" r="2.5"/>',
+    backext: '<path class="ml" d="M24 12v34"/><rect class="mo" x="30" y="36" width="16" height="3" rx="1.5"/>' +
+      '<path class="ml" d="M44 36l-9-15"/><circle class="mo" cx="34" cy="20" r="2.5"/>' +
+      '<rect class="mo" x="42" y="26" width="3" height="9" rx="1.5"/>',
+    curl: '<path class="ml" d="M24 12v34"/><rect class="mo" x="28" y="37" width="16" height="3" rx="1.5"/>' +
+      '<path class="ml" d="M32 34l13-7"/><path class="ml" d="M45 27l5 5"/><circle class="mo" cx="51" cy="33" r="2.5"/>',
+    pushdown: '<path class="ml" d="M24 10v36"/><path class="ml" d="M24 12h20"/><path class="ml" d="M44 12v9"/>' +
+      '<path class="ml" d="M39 21h10"/><rect class="mo" x="36" y="34" width="17" height="3" rx="1.5"/>',
+    dip: '<path class="ml" d="M24 10v36"/><path class="ml" d="M46 10v36"/><path class="ml" d="M24 12h22"/>' +
+      '<path class="ml" d="M28 26h8"/><path class="ml" d="M34 26v6"/><rect class="mo" x="30" y="40" width="14" height="3" rx="1.5"/>',
+    crunch: '<path class="ml" d="M24 12v34"/><rect class="mo" x="28" y="36" width="17" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="28" y="22" width="3" height="14" rx="1.5"/><path class="ml" d="M31 24h13"/>' +
+      '<circle class="mo" cx="46" cy="24" r="2.5"/>',
+    torso: '<path class="ml" d="M24 12v34"/><rect class="mo" x="30" y="36" width="16" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="36" y="20" width="3" height="16" rx="1.5"/>' +
+      '<path class="ml" d="M30 26a9 9 0 0 1 14 0"/>',
+    legpress: '<path class="ml" d="M24 12v34"/><rect class="mo" x="26" y="38" width="16" height="3" rx="1.5"/>' +
+      '<path class="ml" d="M40 38l14-14"/><rect class="mo" x="48" y="17" width="3" height="12" rx="1.5" transform="rotate(45 49.5 23)"/>' +
+      '<rect class="mo" x="26" y="26" width="3" height="12" rx="1.5"/>',
+    legext: '<path class="ml" d="M24 12v34"/><rect class="mo" x="28" y="34" width="16" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="28" y="20" width="3" height="14" rx="1.5"/><path class="ml" d="M44 37v6"/>' +
+      '<circle class="mo" cx="48" cy="43" r="2.5"/><path class="ml" d="M44 43h2"/>',
+    legcurl: '<path class="ml" d="M24 12v34"/><rect class="mo" x="28" y="30" width="20" height="3" rx="1.5"/>' +
+      '<path class="ml" d="M48 33v8"/><circle class="mo" cx="50" cy="42" r="2.5"/>' +
+      '<rect class="mo" x="28" y="19" width="3" height="11" rx="1.5"/>',
+    hip: '<path class="ml" d="M24 12v34"/><rect class="mo" x="30" y="32" width="16" height="3" rx="1.5"/>' +
+      '<rect class="mo" x="30" y="19" width="3" height="13" rx="1.5"/>' +
+      '<path class="ml" d="M34 38l-5 7"/><path class="ml" d="M42 38l5 7"/>' +
+      '<circle class="mo" cx="28" cy="46" r="2.2"/><circle class="mo" cx="48" cy="46" r="2.2"/>',
+    glute: '<path class="ml" d="M24 12v34"/><rect class="mo" x="28" y="24" width="3" height="14" rx="1.5"/>' +
+      '<path class="ml" d="M31 30h12"/><path class="ml" d="M43 30l6 8"/>' +
+      '<rect class="mo" x="46" y="38" width="8" height="3" rx="1.5"/>',
+    pulley: '<path class="ml" d="M24 8v38"/><path class="ml" d="M52 8v38"/><path class="ml" d="M24 10h28"/>' +
+      '<circle class="mo" cx="28" cy="20" r="2.5"/><circle class="mo" cx="48" cy="20" r="2.5"/>' +
+      '<path class="ml" d="M28 23v8"/><path class="ml" d="M48 23v8"/>'
+  };
+  function machineSVG(mv) {
+    return '<svg class="mach" viewBox="0 0 62 52" role="img" aria-label="Schemat maszyny">' +
+      '<rect class="mo" x="5" y="14" width="12" height="30" rx="2"/>' +
+      '<path class="ml" d="M7 19h8M7 24h8M7 29h8M7 34h8M7 39h8"/>' +
+      '<path class="ml" d="M11 8v6"/><path class="ml" d="M4 46h54"/>' +
+      (MACH[mv] || MACH.press) + "</svg>";
+  }
+
+  function exOf(m) {
+    if (!m.ex) return null;
+    for (var i = 0; i < CATALOG.length; i++) if (CATALOG[i].k === m.ex) return CATALOG[i];
+    return null;
+  }
+  function buildStack(v, inspStep) {
+    var step = v.b === "insp" ? inspStep : BRANDS[v.b].step;
+    return range(step, v.max, step);
+  }
+  function fromCatalog(c, brands, inspStep) {
+    var vs = c.v.filter(function (v) { return brands.indexOf(v.b) >= 0; });
+    if (!vs.length) vs = c.v.slice(0, 1);
+    var variants = vs.map(function (v) {
+      return { b: v.b, m: v.m, max: v.max, stack: buildStack(v, inspStep), level: 0 };
+    });
+    return {
+      id: uid(), name: c.n, group: c.g, ex: c.k,
+      variants: variants, vi: 0,
+      stack: variants[0].stack.slice(), level: 0, lastAt: null, history: []
+    };
+  }
+  /* aktywny wariant trzyma bieżący stos i poziom — reszta logiki karty go nie widzi */
+  function variant(m) { return m.variants && m.variants[m.vi] ? m.variants[m.vi] : null; }
+  function syncVariant(m) {
+    var v = variant(m);
+    if (v) { v.stack = m.stack.slice(); v.level = m.level; }
+  }
+  function useVariant(m, i) {
+    if (!m.variants || !m.variants[i] || i === m.vi) return false;
+    syncVariant(m);
+    m.vi = i;
+    m.stack = m.variants[i].stack.slice();
+    m.level = m.variants[i].level || 0;
+    return true;
   }
 
   /* Zestaw startowy — używany tylko gdy nie ma jeszcze żadnych zapisanych danych. */
-  var DEFAULTS = CATALOG.map(function (c) { return fromCatalog(c, 5); });
+  var DEFAULTS = CATALOG.map(function (c) { return fromCatalog(c, ["insp", "tg"], 2.25); });
 
   /* Trzy zestawy ćwiczeń — stała trójka, użytkownik zmienia nazwy i zawartość.
      Zestaw to wybrane maszyny w ustalonej kolejności; maszyna może być w kilku. */
@@ -637,6 +890,7 @@
   /* "all" | "g:<partia>" | "s:<id zestawu>" */
   var filter = "all";
   var openHist = {};
+  var openInfo = {};
   var editing = null;
 
   /* ---------- czas ---------- */
@@ -671,6 +925,11 @@
     });
   }
   function fmt(n) { return (Math.round(n * 100) / 100).toString().replace(".", ","); }
+  /* nazwy ze starszych wersji miały model w nawiasie — przy porównaniu go pomijamy,
+     żeby katalog nie dorzucał drugi raz tego samego ćwiczenia */
+  function normName(s) {
+    return String(s).toLowerCase().replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+  }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms || 8); } catch (e) {} }
 
   /* ---------- zapis ---------- */
@@ -810,9 +1069,41 @@
     document.getElementById("score").innerHTML = n ? "dziś <b>" + done + "</b> / " + n : "";
     document.getElementById("barfill").style.width = n ? (done / n * 100) + "%" : "0%";
   }
+  function muscleName(k) { return MUSCLES[k] || k; }
+  function stackDesc(st) {
+    if (!st || !st.length) return "brak obciążeń";
+    var step = st.length > 1 ? Math.round((st[1] - st[0]) * 100) / 100 : 0;
+    return "stos " + fmt(st[0]) + "–" + fmt(st[st.length - 1]) + " kg" +
+      (step ? ", co " + fmt(step) + " kg" : "") + " · " + st.length + " poz.";
+  }
+  function infoHTML(m) {
+    var c = exOf(m);
+    var pr = c ? c.pr : [], se = c ? c.se : [];
+    var art = '<div class="art">' + machineSVG(c ? c.mv : "press") + muscleSVG(pr, se) + "</div>";
+    var rows = (m.variants || []).map(function (v, i) {
+      var b = BRANDS[v.b];
+      return '<div class="spec-row' + (i === m.vi ? " cur" : "") + '"><b>' +
+        esc(b ? b.name : "Twoja maszyna") + (v.m ? " — " + esc(v.m) : "") + "</b>" +
+        "<em>" + esc(stackDesc(i === m.vi ? m.stack : v.stack)) + "</em></div>";
+    }).join("");
+    var mus = (pr.length || se.length)
+      ? '<div class="mus"><b>Pracują:</b> ' + pr.map(muscleName).join(", ") +
+        (se.length ? ' · <b>wspomagają:</b> ' + se.map(muscleName).join(", ") : "") + "</div>"
+      : "";
+    var sw = (m.variants && m.variants.length > 1)
+      ? '<div class="vsw">' + m.variants.map(function (v, i) {
+          return '<button class="chip set" data-act="vsw" data-vi="' + i + '" aria-pressed="' + (i === m.vi) + '">' +
+            esc(BRANDS[v.b] ? BRANDS[v.b].short : "Moja") + "</button>";
+        }).join("") + "</div>"
+      : "";
+    return '<div class="info">' + art + '<div class="spec">' + rows + mus + "</div>" + sw + "</div>";
+  }
   function cardHTML(m, i) {
     var w = weightOf(m), lv = levelOf(m), today = isToday(m.lastAt);
     var pos = activeSet() ? '<span class="tag pos">' + (i + 1) + "</span>" : "";
+    var av = variant(m);
+    var brandTag = av && BRANDS[av.b] ? '<span class="tag">' + esc(BRANDS[av.b].short) + "</span>" : "";
+    var info = openInfo[m.id] ? infoHTML(m) : "";
     var plates = m.stack.map(function (_, i) {
       return '<i class="plate' + (i === lv ? " cur" : (i < lv ? " on" : "")) + '"></i>';
     }).join("");
@@ -825,8 +1116,9 @@
     }
     return '<article class="card' + (today ? " today" : "") + (m.lastAt ? "" : " unused") + '" data-id="' + esc(m.id) + '">' +
       '<div class="card-head"><div style="flex:1"><h2>' + esc(m.name) + "</h2>" +
-        '<p class="meta">' + pos + '<span class="tag">' + esc(m.group) + "</span>" +
+        '<p class="meta">' + pos + '<span class="tag">' + esc(m.group) + "</span>" + brandTag +
         '<span class="when' + (today ? " fresh" : "") + '">' + esc(ago(m.lastAt)) + "</span></p></div>" +
+        '<button class="icon" data-act="info" aria-label="O maszynie i mięśniach">&#9432;</button>' +
         '<button class="icon" data-act="edit" aria-label="Edytuj">✎</button></div>' +
       '<div class="stepper">' +
         '<button class="step" data-act="dec" aria-label="Niższy poziom"' + (lv <= 0 ? " disabled" : "") + ">−</button>" +
@@ -837,7 +1129,7 @@
       '<div class="foot">' +
         '<button class="lvl" data-act="hist">poziom ' + (lv + 1) + " / " + m.stack.length + " · historia</button>" +
         '<button class="done" data-act="done">' + (today ? "✓ zrobione" : "Zrobione dziś") + "</button>" +
-      "</div>" + hist + "</article>";
+      "</div>" + info + hist + "</article>";
   }
   function render() {
     renderChips();
@@ -845,7 +1137,7 @@
     renderScore();
     var items = visible();
     var empty = !state.machines.length
-      ? '<p class="empty">Nie masz jeszcze żadnej maszyny.<br><button class="btn" data-act="catalog">Weź z katalogu Nautilus Inspiration</button></p>'
+      ? '<p class="empty">Nie masz jeszcze żadnej maszyny.<br><button class="btn" data-act="catalog">Weź z katalogu ćwiczeń</button></p>'
       : activeSet()
         ? '<p class="empty">Ten zestaw jest jeszcze pusty.<br><button class="btn" data-act="setup">Ułóż zestaw</button></p>'
         : '<p class="empty">Brak maszyn w tej partii.</p>';
@@ -889,7 +1181,7 @@
     scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Ustawienia maszyny">' +
       '<div class="grab"></div>' +
       "<h3>" + (id ? "Maszyna" : "Nowa maszyna") + "</h3>" +
-      (id ? "" : '<button type="button" class="btn wide" id="f-cat" style="margin-bottom:15px">Weź z katalogu Nautilus Inspiration</button>') +
+      (id ? "" : '<button type="button" class="btn wide" id="f-cat" style="margin-bottom:15px">Weź z katalogu ćwiczeń</button>') +
       '<div class="field"><label for="f-name">Nazwa</label><input id="f-name" value="' + esc(m.name) + '" placeholder="np. Wyciąg górny" autocomplete="off"></div>' +
       '<div class="field"><label for="f-group">Partia</label><select id="f-group">' +
         GROUPS.map(function (g) { return '<option value="' + esc(g) + '"' + (g === m.group ? " selected" : "") + ">" + esc(g) + "</option>"; }).join("") +
@@ -967,9 +1259,11 @@
         t.name = name; t.group = group; t.stack = stack;
         var idx = stack.indexOf(oldW);
         t.level = idx >= 0 ? idx : Math.min(levelOf(t), stack.length - 1);
+        syncVariant(t);
         applySets(id);
       } else {
-        var fresh = { id: uid(), name: name, group: group, stack: stack, level: 0, lastAt: null, history: [] };
+        var fresh = { id: uid(), name: name, group: group, stack: stack, level: 0, lastAt: null, history: [],
+          variants: [{ b: "", m: "", stack: stack.slice(), level: 0 }], vi: 0 };
         state.machines.push(fresh);
         applySets(fresh.id);
       }
@@ -986,24 +1280,34 @@
 
   /* ---------- katalog maszyn ---------- */
   function openCatalog() {
-    var step = 5;
+    var step = 2.25;
+    var brands = ["insp", "tg"];
     var have = {};
-    state.machines.forEach(function (m) { have[m.name.toLowerCase()] = true; });
+    state.machines.forEach(function (m) {
+      if (m.ex) have[m.ex] = true;
+      have["n:" + normName(m.name)] = true;
+    });
+    function mine(c) { return !!(have[c.k] || have["n:" + normName(c.n)]); }
     var picked = {};
-    CATALOG.forEach(function (c) { picked[c.n] = !have[c.n.toLowerCase()]; });
+    CATALOG.forEach(function (c) { picked[c.k] = !mine(c); });
 
     var scrim = document.createElement("div");
     scrim.className = "scrim";
     scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Katalog maszyn">' +
-      '<div class="grab"></div><h3>Nautilus Inspiration</h3>' +
-      '<p class="hint" style="margin:-8px 0 14px">Cała linia — 20 stanowisk. Stosy wg danych producenta ' +
-        "(240 lb ≈ 110 kg, 200 lb ≈ 90 kg, Leg Press 400 lb ≈ 180 kg). " +
-        "Sprawdź płytki na swoich maszynach i popraw, jeśli się różnią.</p>" +
-      '<div class="field"><label>Krok stosu</label><div class="setpick" id="c-step">' +
-        '<button type="button" class="chip set" data-step="2.5" aria-pressed="false">co 2,5 kg</button>' +
-        '<button type="button" class="chip set" data-step="5" aria-pressed="true">co 5 kg</button>' +
-        '<button type="button" class="chip set" data-step="10" aria-pressed="false">co 10 kg</button>' +
+      '<div class="grab"></div><h3>Katalog ćwiczeń</h3>' +
+      '<p class="hint" style="margin:-8px 0 14px">Jedna pozycja to jedno ćwiczenie — jeśli robi się je ' +
+        "na maszynie obu producentów, obie siedzą na jednej karcie i przełączasz je jednym dotknięciem. " +
+        "Stosy wg danych producentów; sprawdź płytki u siebie i popraw, jeśli się różnią.</p>" +
+      '<div class="field"><label>Producent</label><div class="setpick" id="c-brand">' +
+        '<button type="button" class="chip set" data-b="insp" aria-pressed="true">Nautilus Inspiration</button>' +
+        '<button type="button" class="chip set" data-b="tg" aria-pressed="true">Technogym Selection</button>' +
       "</div></div>" +
+      '<div class="field"><label>Krok stosu Inspiration</label><div class="setpick" id="c-step">' +
+        INSP_STEPS.map(function (o) {
+          return '<button type="button" class="chip set" data-step="' + o.v + '" aria-pressed="' +
+            (o.v === step) + '">' + o.label + '<span class="chip-n">' + o.note + "</span></button>";
+        }).join("") +
+      '</div><span class="hint">Maszyny Inspiration przeskakują co 5 lb — stąd 2,25 kg. Technogym: co 5 kg.</span></div>' +
       '<div id="c-body"></div>' +
       '<div class="sheet-actions">' +
         '<button class="btn" id="c-cancel">Anuluj</button>' +
@@ -1015,53 +1319,112 @@
     var body = scrim.querySelector("#c-body");
     var addBtn = scrim.querySelector("#c-add");
 
-    function count() {
-      return CATALOG.filter(function (c) { return picked[c.n] && !have[c.n.toLowerCase()]; }).length;
+    function chosen() { return CATALOG.filter(function (c) { return picked[c.k] && !mine(c); }); }
+    function vsFor(c) {
+      var vs = c.v.filter(function (v) { return brands.indexOf(v.b) >= 0; });
+      return vs.length ? vs : c.v.slice(0, 1);
     }
     function draw() {
-      body.innerHTML = '<p class="sub">Maszyny (' + count() + " z " + CATALOG.length + ")</p>" +
+      body.innerHTML = '<p class="sub">Ćwiczenia (' + chosen().length + " z " + CATALOG.length + ")</p>" +
         '<div class="picks">' + CATALOG.map(function (c) {
-          var mine = have[c.n.toLowerCase()];
-          var on = picked[c.n] && !mine;
-          return '<div class="pick' + (mine ? " off" : "") + '">' +
-            '<span class="nm">' + esc(c.n) + "<small>" + esc(c.g) + " · do " + fmt(c.max) + " kg" +
-              (mine ? " · już masz" : "") + "</small></span>" +
-            '<button type="button" class="plus" data-pick="' + esc(c.n) + '"' + (mine ? " disabled" : "") +
+          var own = mine(c), on = picked[c.k] && !own;
+          var desc = vsFor(c).map(function (v) {
+            return (BRANDS[v.b] ? BRANDS[v.b].short : "?") + " do " + fmt(v.max) + " kg";
+          }).join(" · ");
+          return '<div class="pick' + (own ? " off" : "") + '">' +
+            '<span class="nm">' + esc(c.n) + "<small>" + esc(c.g) + " · " + esc(desc) +
+              (own ? " · już masz" : "") + "</small></span>" +
+            '<button type="button" class="plus" data-pick="' + esc(c.k) + '"' + (own ? " disabled" : "") +
               ' aria-pressed="' + on + '" aria-label="' + (on ? "Odznacz" : "Zaznacz") + '">' +
               (on ? "✓" : "+") + "</button></div>";
         }).join("") + "</div>";
-      addBtn.textContent = "Dodaj (" + count() + ")";
+      addBtn.textContent = "Dodaj (" + chosen().length + ")";
     }
     draw();
 
+    function redraw() {
+      var keep = sheet.scrollTop;
+      draw();
+      sheet.scrollTop = keep;
+      buzz();
+    }
+    scrim.querySelector("#c-brand").addEventListener("click", function (e) {
+      var b = e.target.closest(".chip");
+      if (!b) return;
+      var key = b.getAttribute("data-b");
+      var i = brands.indexOf(key);
+      if (i >= 0) { if (brands.length < 2) return; brands.splice(i, 1); }
+      else brands.push(key);
+      b.setAttribute("aria-pressed", String(brands.indexOf(key) >= 0));
+      redraw();
+    });
     scrim.querySelector("#c-step").addEventListener("click", function (e) {
       var b = e.target.closest(".chip");
       if (!b) return;
       step = parseFloat(b.getAttribute("data-step"));
       var chips = scrim.querySelectorAll("#c-step .chip");
-      for (var i = 0; i < chips.length; i++) {
-        chips[i].setAttribute("aria-pressed", String(chips[i] === b));
-      }
+      for (var i = 0; i < chips.length; i++) chips[i].setAttribute("aria-pressed", String(chips[i] === b));
       buzz();
     });
     body.addEventListener("click", function (e) {
       var b = e.target.closest("[data-pick]");
       if (!b || b.disabled) return;
-      var key = b.getAttribute("data-pick");
-      picked[key] = !picked[key];
-      var keep = sheet.scrollTop;
-      draw();
-      sheet.scrollTop = keep;
-      buzz();
+      var k = b.getAttribute("data-pick");
+      picked[k] = !picked[k];
+      redraw();
     });
     scrim.addEventListener("click", function (e) { if (e.target === scrim) close(); });
     scrim.querySelector("#c-cancel").addEventListener("click", close);
     addBtn.addEventListener("click", function () {
-      var add = CATALOG.filter(function (c) { return picked[c.n] && !have[c.n.toLowerCase()]; });
+      var add = chosen();
       if (!add.length) { toast("Nic nie zaznaczone"); return; }
-      add.forEach(function (c) { state.machines.push(fromCatalog(c, step)); });
+      add.forEach(function (c) { state.machines.push(fromCatalog(c, brands, step)); });
       save(); close(); render();
-      toast("Dodano " + add.length + (add.length === 1 ? " maszynę" : add.length < 5 ? " maszyny" : " maszyn"));
+      toast("Dodano " + add.length + (add.length === 1 ? " ćwiczenie" : add.length < 5 ? " ćwiczenia" : " ćwiczeń"));
+    });
+    function close() {
+      scrim.remove();
+      document.removeEventListener("keydown", onKey);
+    }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+  }
+
+  /* ---------- menu: katalog i zerowanie danych ---------- */
+  function freshStart() {
+    state.machines = CATALOG.map(function (c) { return fromCatalog(c, ["insp", "tg"], 2.25); });
+    state.sets = starterSets(state.machines);
+    openHist = {};
+    openInfo = {};
+    filter = "all";
+    save();
+    saveView();
+  }
+  function openMenu() {
+    var scrim = document.createElement("div");
+    scrim.className = "scrim";
+    scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Menu">' +
+      '<div class="grab"></div><h3>Dane</h3>' +
+      '<p class="hint" style="margin:-8px 0 14px">Wszystko siedzi w tym telefonie — nic nie wychodzi na żaden serwer. ' +
+        "Masz teraz " + state.machines.length + (state.machines.length === 1 ? " ćwiczenie." : " ćwiczeń.") + "</p>" +
+      '<button class="btn wide" id="m-cat" style="margin-bottom:10px">Dołóż z katalogu ćwiczeń</button>' +
+      '<button class="btn wide danger" id="m-reset">Wyzeruj dane i zacznij od zera</button>' +
+      '<p class="hint" style="margin:9px 0 0">Zerowanie kasuje wszystkie ćwiczenia, poziomy, historię i zestawy, ' +
+        "a potem zaciąga cały katalog od nowa. Tego nie da się cofnąć.</p>" +
+      '<div class="sheet-actions"><button class="btn wide" id="m-close">Zamknij</button></div></div>';
+    document.body.appendChild(scrim);
+
+    scrim.addEventListener("click", function (e) { if (e.target === scrim) close(); });
+    scrim.querySelector("#m-close").addEventListener("click", close);
+    scrim.querySelector("#m-cat").addEventListener("click", function () { close(); openCatalog(); });
+    scrim.querySelector("#m-reset").addEventListener("click", function () {
+      if (!confirm("Skasować wszystkie dane i zacząć od nowa z pełnym katalogiem?")) return;
+      if (!confirm("Na pewno? Historia i zestawy przepadną bezpowrotnie.")) return;
+      freshStart();
+      close();
+      render();
+      window.scrollTo({ top: 0 });
+      toast("Zaczynamy od zera — " + state.machines.length + " ćwiczeń");
     });
     function close() {
       scrim.remove();
@@ -1204,6 +1567,10 @@
     if (!m) return;
     if (act === "done") { stamp(m); save(); refreshCard(card, m); buzz(); }
     else if (act === "hist") { openHist[m.id] = !openHist[m.id]; render(); }
+    else if (act === "info") { openInfo[m.id] = !openInfo[m.id]; render(); }
+    else if (act === "vsw") {
+      if (useVariant(m, parseInt(btn.getAttribute("data-vi"), 10))) { save(); render(); buzz(); }
+    }
     else if (act === "edit") openEditor(m.id);
   });
   document.getElementById("chips").addEventListener("click", function (e) {
@@ -1215,6 +1582,7 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   document.getElementById("add").addEventListener("click", function () { openEditor(null); });
+  document.getElementById("menu").addEventListener("click", openMenu);
 
   /* ---------- podpowiedź: dodaj do ekranu głównego ---------- */
   function installHint() {
@@ -1243,12 +1611,31 @@
   function adopt(data) {
     if (!data || !Array.isArray(data.machines)) return false;
     state.machines = data.machines.map(function (m) {
+      var stack = Array.isArray(m.stack) ? m.stack.filter(function (v) { return typeof v === "number" && isFinite(v); }) : [];
+      var level = typeof m.level === "number" ? m.level : 0;
+      /* starsze zapisy nie znały wariantów — robimy z nich jeden, bez marki */
+      var variants = Array.isArray(m.variants) && m.variants.length
+        ? m.variants.map(function (v) {
+            return {
+              b: BRANDS[v.b] ? v.b : "",
+              m: String(v.m || ""),
+              stack: Array.isArray(v.stack) ? v.stack.filter(function (x) { return typeof x === "number" && isFinite(x); }) : [],
+              level: typeof v.level === "number" ? v.level : 0
+            };
+          }).filter(function (v) { return v.stack.length; })
+        : [];
+      if (!variants.length) variants = [{ b: "", m: "", stack: stack.slice(), level: level }];
+      var vi = typeof m.vi === "number" && m.variants && variants[m.vi] ? m.vi : 0;
+      if (!stack.length) { stack = variants[vi].stack.slice(); level = variants[vi].level || 0; }
       return {
         id: m.id || uid(),
         name: String(m.name || "Maszyna"),
         group: GROUPS.indexOf(m.group) >= 0 ? m.group : "Inne",
-        stack: Array.isArray(m.stack) ? m.stack.filter(function (v) { return typeof v === "number" && isFinite(v); }) : [],
-        level: typeof m.level === "number" ? m.level : 0,
+        ex: typeof m.ex === "string" ? m.ex : null,
+        variants: variants,
+        vi: vi,
+        stack: stack,
+        level: level,
         lastAt: m.lastAt || null,
         history: Array.isArray(m.history) ? m.history : []
       };

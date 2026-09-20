@@ -4,21 +4,47 @@ Prosty tracker obciążeń na maszynach siłowych. Pokazuje, jaki ciężar był 
 ustawiony na danej maszynie, i pozwala jednym dotknięciem zejść lub wejść na kolejny
 poziom stosu. Wartości obciążeń są predefiniowane per maszyna i edytowalne.
 
-## Katalog maszyn Nautilus Inspiration
+## Katalog ćwiczeń — Nautilus Inspiration i Technogym Selection
 
-W aplikacji jest gotowy katalog całej linii **Nautilus Inspiration®** — 20 stanowisk
-z nazwami polskimi i oryginalnymi, przypisaną partią i stosem obciążeń.
+Aplikacja ma wbudowany katalog 22 ćwiczeń. **Jedna karta to jedno ćwiczenie**, a pod
+nim siedzą warianty maszyn obu producentów — jeśli to samo ćwiczenie robi się na
+maszynie Nautilus Inspiration® i Technogym Selection, obie są na tej samej karcie
+i przełącza się je jednym dotknięciem (każda ma własny stos i własny zapamiętany poziom).
 
-- Świeża instalacja startuje od razu z tymi maszynami.
-- Jeśli masz już swoje dane, katalog otwiera się przyciskiem **„Weź z katalogu
-  Nautilus Inspiration”** w arkuszu nowej maszyny (+ w dolnym pasku). Maszyny, które
-  już masz, są wyszarzone i nie dublują się.
-- Przy dodawaniu wybiera się **krok stosu**: co 2,5 / 5 / 10 kg.
+- **Świeża instalacja** startuje z pełnym katalogiem.
+- **Mając już swoje dane** otwierasz katalog przez `⋯` w nagłówku → „Dołóż z katalogu
+  ćwiczeń” (albo przyciskiem w oknie nowej maszyny). Można wybrać producenta
+  i krok stosu; ćwiczenia, które już masz, są wyszarzone.
+- **Ćwiczenia na wspólnych maszynach są rozdzielone** na osobne karty, bo idą na inne
+  mięśnie i przy innym obciążeniu: rozpiętki / odwrotne rozpiętki oraz
+  odwodzenie / przywodzenie nóg.
 
-Górne wartości stosów pochodzą ze specyfikacji producenta (Core Health & Fitness):
-240 lb ≈ 110 kg, 200 lb ≈ 90 kg, Leg Press 400 lb ≈ 180 kg. Maszyny przeskakują
-co 5 lb, więc w kilogramach wychodzą wartości zaokrąglone — **warto porównać
-z płytkami na swoich maszynach** i poprawić w edytorze (jest tam generator „od / do / co”).
+### Rysunki i opis na karcie
+
+Ikona `ⓘ` na karcie rozwija panel z:
+
+- **schematem maszyny** (widok z boku: stos, rama, siedzisko i to, co się rusza),
+- **mapą mięśni** — sylwetka od przodu i od tyłu, główne mięśnie na czerwono,
+  wspomagające półprzezroczyście,
+- **danymi producenta**: model maszyny i zakres stosu dla każdego wariantu.
+
+### Obciążenia
+
+| Producent | Krok stosu | Skąd |
+| --- | --- | --- |
+| Nautilus Inspiration | 2,25 / 4,5 / 9 kg (5 / 10 / 20 lb) | stosy 240 lb ≈ 110 kg, 200 lb ≈ 90 kg, Leg Press 400 lb ≈ 180 kg |
+| Technogym Selection | 5 kg | stosy metryczne, np. Chest Press 100 kg, Leg Press 190 kg |
+
+Maszyny Inspiration przeskakują co 5 lb, stąd niecałkowite wartości w kilogramach.
+Konkretny egzemplarz bywa inny (wersje „plus”, dokładki), więc **warto porównać
+z płytkami u siebie** i poprawić w edytorze — jest tam generator „od / do / co”.
+
+## Dane
+
+`⋯` w nagłówku otwiera panel danych: dokładanie ćwiczeń z katalogu oraz
+**wyzerowanie wszystkiego** — kasuje ćwiczenia, poziomy, historię i zestawy,
+po czym zaciąga cały katalog od nowa. Operacja jest nieodwracalna i wymaga
+dwóch potwierdzeń.
 
 ## Zestawy ćwiczeń
 
