@@ -31,6 +31,8 @@ kolejności, a licznik u góry pokazuje postęp tego zestawu, nie całej listy.
 - **Maszyna może być w kilku zestawach naraz** — przypisanie jest też w edytorze
   maszyny, pod polem partii.
 - **Nowa maszyna dodana z widoku zestawu** od razu do niego trafia.
+- **Powrót do wszystkich ćwiczeń** — przycisk „← Wszystko” na pasku zestawu,
+  a w dolnym pasku „Wszystko” stoi jako pierwsze, przed zestawami.
 - **Aplikacja pamięta wybrany widok** — po zamknięciu otwiera się tam, gdzie się skończyło.
 
 Przy pierwszym uruchomieniu zestawy są wstępnie wypełnione maszynami startowymi

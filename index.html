@@ -440,6 +440,20 @@
   }
   .setbar .meta { margin-top: 3px; }
   .setbar .icon { margin: 0; }
+  .setbar .back {
+    flex: 0 0 auto;
+    font: inherit;
+    font-size: 13px;
+    min-height: 40px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .setbar .back:active { background: var(--surface-2); }
   .tag.pos { background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
   .empty .btn { margin-top: 14px; }
 
@@ -745,18 +759,27 @@
     if (filter.indexOf("g:") === 0 && used.indexOf(filter.slice(2)) < 0) filter = "all";
     if (filter.indexOf("s:") === 0 && !findSet(filter.slice(2))) filter = "all";
 
-    var html = [];
+    /* „Wszystko” zawsze pierwsze — to widok domowy, musi być pod ręką */
+    var html = ['<button class="chip" data-v="all" aria-pressed="' + (filter === "all") + '">Wszystko</button>'];
+    html.push('<span class="chip-sep" aria-hidden="true"></span>');
     state.sets.forEach(function (s) {
       var n = setMachines(s).length;
       html.push('<button class="chip set" data-v="s:' + esc(s.id) + '" aria-pressed="' + (filter === "s:" + s.id) + '">' +
         esc(s.name) + (n ? '<span class="chip-n">' + n + "</span>" : "") + "</button>");
     });
     html.push('<span class="chip-sep" aria-hidden="true"></span>');
-    html.push('<button class="chip" data-v="all" aria-pressed="' + (filter === "all") + '">Wszystko</button>');
     used.forEach(function (g) {
       html.push('<button class="chip" data-v="g:' + esc(g) + '" aria-pressed="' + (filter === "g:" + g) + '">' + esc(g) + "</button>");
     });
-    document.getElementById("chips").innerHTML = html.join("");
+    var box = document.getElementById("chips");
+    box.innerHTML = html.join("");
+    /* pasek się przewija — dociągnij aktywny chip do widoku, żeby nie zginął za krawędzią */
+    var on = box.querySelector('.chip[aria-pressed="true"]');
+    if (on) {
+      var l = on.offsetLeft, r = l + on.offsetWidth;
+      if (l < box.scrollLeft) box.scrollLeft = Math.max(0, l - 10);
+      else if (r > box.scrollLeft + box.clientWidth) box.scrollLeft = r - box.clientWidth + 10;
+    }
   }
   /* pasek nad listą: co to za zestaw, ile ćwiczeń, kiedy ostatnio i skrót do edycji */
   function renderSetbar() {
@@ -765,11 +788,19 @@
     if (!s) { slot.innerHTML = ""; return; }
     var n = setMachines(s).length, last = setLastAt(s);
     slot.innerHTML = '<section class="setbar"><div><h2>' + esc(s.name) + "</h2>" +
-      '<p class="meta"><span class="tag">zestaw</span>' +
+      '<p class="meta">' +
       '<span class="when' + (isToday(last) ? " fresh" : "") + '">' +
       (n ? n + (n === 1 ? " ćwiczenie · " : " ćw. · ") + esc(ago(last)) : "pusty") + "</span></p></div>" +
+      '<button class="back" id="set-back">← Wszystko</button>' +
       '<button class="icon" id="set-edit" aria-label="Edytuj zestaw">✎</button></section>';
     slot.querySelector("#set-edit").addEventListener("click", function () { openSetEditor(s.id); });
+    slot.querySelector("#set-back").addEventListener("click", function () {
+      filter = "all";
+      saveView();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      buzz();
+    });
   }
   function renderScore() {
     var s = activeSet();
