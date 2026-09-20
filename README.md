@@ -4,6 +4,22 @@ Prosty tracker obciążeń na maszynach siłowych. Pokazuje, jaki ciężar był 
 ustawiony na danej maszynie, i pozwala jednym dotknięciem zejść lub wejść na kolejny
 poziom stosu. Wartości obciążeń są predefiniowane per maszyna i edytowalne.
 
+## Zestawy ćwiczeń
+
+Obok widoku „Wszystko” i filtrów po partii są trzy zestawy treningowe (A, B, C) —
+gotowe plany na konkretny dzień. W zestawie widać tylko jego maszyny, w ustalonej
+kolejności, a licznik u góry pokazuje postęp tego zestawu, nie całej listy.
+
+- **Nazwa i zawartość są edytowalne** — ✎ na pasku zestawu otwiera arkusz, w którym
+  dobiera się ćwiczenia, zmienia ich kolejność (↑ ↓) i nadaje zestawowi własną nazwę.
+- **Maszyna może być w kilku zestawach naraz** — przypisanie jest też w edytorze
+  maszyny, pod polem partii.
+- **Nowa maszyna dodana z widoku zestawu** od razu do niego trafia.
+- **Aplikacja pamięta wybrany widok** — po zamknięciu otwiera się tam, gdzie się skończyło.
+
+Przy pierwszym uruchomieniu zestawy są wstępnie wypełnione maszynami startowymi
+(A — klatka, barki i ramiona; B — plecy i brzuch; C — nogi).
+
 ## Jak to działa
 
 - **Jedna strona, bez backendu.** Wszystko dzieje się w przeglądarce.

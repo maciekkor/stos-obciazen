@@ -405,6 +405,83 @@
   .btn.danger { color: var(--accent); }
   .btn.wide { width: 100%; }
 
+  /* ---------- zestawy ćwiczeń ---------- */
+  .chip.set { border-color: var(--accent); color: var(--accent); }
+  .chip.set[aria-pressed="true"] {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--accent-ink); font-weight: 500;
+  }
+  .chip-n { font-size: 11px; opacity: .7; font-variant-numeric: tabular-nums; margin-left: 5px; }
+  .chip-sep {
+    flex: 0 0 auto;
+    width: 1px; height: 24px;
+    align-self: center;
+    background: var(--line-strong);
+    margin: 0 3px;
+  }
+
+  .setbar {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 11px 8px 11px 13px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .setbar > div { flex: 1; min-width: 0; }
+  .setbar h2 {
+    margin: 0;
+    font-size: 16px; font-weight: 600; line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .setbar .meta { margin-top: 3px; }
+  .setbar .icon { margin: 0; }
+  .tag.pos { background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+  .empty .btn { margin-top: 14px; }
+
+  /* układanie zestawu w arkuszu */
+  .sub {
+    margin: 0 0 7px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); font-weight: 600;
+  }
+  .picks { display: grid; gap: 6px; margin-bottom: 15px; }
+  .pick {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    padding: 5px 5px 5px 11px;
+  }
+  .pick .ord { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 19px; }
+  .pick .nm { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.25; overflow-wrap: anywhere; }
+  .pick .nm small {
+    display: block;
+    font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted);
+  }
+  .pick button {
+    flex: 0 0 auto;
+    width: 38px; height: 38px;
+    border: 0; border-radius: 9px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 16px; line-height: 1;
+    cursor: pointer;
+  }
+  .pick button:active:not(:disabled) { background: var(--line); color: var(--ink); }
+  .pick button:disabled { opacity: .3; }
+  .pick button.plus { color: var(--accent); font-size: 23px; }
+  .picks-empty { margin: 0 0 15px; font-size: 13.5px; font-style: italic; color: var(--muted); }
+  .setpick { display: flex; gap: 6px; flex-wrap: wrap; }
+  .setpick .chip { min-height: 40px; font-size: 13px; }
+
   /* ---------- pasek „na ekran główny" ---------- */
   .install {
     background: var(--surface);
@@ -460,6 +537,7 @@
 
 <div class="wrap">
   <div id="install-slot"></div>
+  <div id="set-slot"></div>
   <main class="list" id="list"></main>
 </div>
 
@@ -477,6 +555,7 @@
   var GROUPS = ["Nogi", "Plecy", "Klatka", "Barki", "Ramiona", "Brzuch", "Cardio", "Inne"];
   var LS_KEY = "stos-obciazen-v1";
   var LS_HINT = "stos-obciazen-hint";
+  var LS_VIEW = "stos-obciazen-view";
 
   function range(from, to, step) {
     var out = [], v = from;
@@ -504,7 +583,28 @@
     return { id: uid(), name: m.name, group: m.group, stack: m.stack, level: 0, lastAt: null, history: [] };
   });
 
-  var state = { machines: [] };
+  /* Trzy zestawy ćwiczeń — stała trójka, użytkownik zmienia nazwy i zawartość.
+     Zestaw to wybrane maszyny w ustalonej kolejności; maszyna może być w kilku. */
+  function newSets() {
+    return [
+      { id: "set-a", name: "Zestaw A", items: [] },
+      { id: "set-b", name: "Zestaw B", items: [] },
+      { id: "set-c", name: "Zestaw C", items: [] }
+    ];
+  }
+  /* Przy pierwszym uruchomieniu zestawy dzielą maszyny startowe na trzy dni. */
+  var STARTER_PLAN = [["Klatka", "Barki", "Ramiona"], ["Plecy", "Brzuch"], ["Nogi"]];
+  function starterSets(machines) {
+    var sets = newSets();
+    sets.forEach(function (s, i) {
+      s.items = machines.filter(function (m) { return STARTER_PLAN[i].indexOf(m.group) >= 0; })
+        .map(function (m) { return m.id; });
+    });
+    return sets;
+  }
+
+  var state = { machines: [], sets: newSets() };
+  /* "all" | "g:<partia>" | "s:<id zestawu>" */
   var filter = "all";
   var openHist = {};
   var editing = null;
@@ -544,7 +644,7 @@
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms || 8); } catch (e) {} }
 
   /* ---------- zapis ---------- */
-  function payload() { return { machines: state.machines, updatedAt: new Date().toISOString() }; }
+  function payload() { return { machines: state.machines, sets: state.sets, updatedAt: new Date().toISOString() }; }
   var warned = false;
   function saveLocal() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(payload())); }
@@ -553,6 +653,8 @@
     }
   }
   function save() { saveLocal(); }   // wszystko zostaje w tym telefonie
+  /* wybrany widok też zostaje — na siłowni aplikacja otwiera się tam, gdzie się skończyło */
+  function saveView() { try { localStorage.setItem(LS_VIEW, filter); } catch (e) {} }
   var toastTimer = null;
   function toast(msg) {
     var old = document.querySelector(".toast");
@@ -582,6 +684,24 @@
     else m.history.push({ w: weightOf(m), t: now });
     if (m.history.length > 10) m.history = m.history.slice(-10);
   }
+  function findSet(id) {
+    for (var i = 0; i < state.sets.length; i++) if (state.sets[i].id === id) return state.sets[i];
+    return null;
+  }
+  function activeSet() { return filter.indexOf("s:") === 0 ? findSet(filter.slice(2)) : null; }
+  function setMachines(s) {
+    return (s.items || []).map(find).filter(function (m) { return !!m; });
+  }
+  function setLastAt(s) {
+    var best = null;
+    setMachines(s).forEach(function (m) { if (m.lastAt && (!best || m.lastAt > best)) best = m.lastAt; });
+    return best;
+  }
+  function dropFromSets(id) {
+    state.sets.forEach(function (s) {
+      s.items = s.items.filter(function (x) { return x !== id; });
+    });
+  }
   function move(m, dir) {
     if (!m.stack.length) return false;
     var next = Math.min(Math.max(levelOf(m) + dir, 0), m.stack.length - 1);
@@ -594,27 +714,58 @@
 
   /* ---------- widok ---------- */
   function visible() {
-    return state.machines.filter(function (m) { return filter === "all" || m.group === filter; });
+    var s = activeSet();
+    if (s) return setMachines(s);                       // kolejność z zestawu
+    if (filter.indexOf("g:") === 0) {
+      var g = filter.slice(2);
+      return state.machines.filter(function (m) { return m.group === g; });
+    }
+    return state.machines.slice();
   }
   function renderChips() {
     var used = [];
     state.machines.forEach(function (m) { if (used.indexOf(m.group) < 0) used.push(m.group); });
     used.sort(function (a, b) { return GROUPS.indexOf(a) - GROUPS.indexOf(b); });
-    if (filter !== "all" && used.indexOf(filter) < 0) filter = "all";
-    var html = ['<button class="chip" data-g="all" aria-pressed="' + (filter === "all") + '">Wszystko</button>'];
+    if (filter.indexOf("g:") === 0 && used.indexOf(filter.slice(2)) < 0) filter = "all";
+    if (filter.indexOf("s:") === 0 && !findSet(filter.slice(2))) filter = "all";
+
+    var html = [];
+    state.sets.forEach(function (s) {
+      var n = setMachines(s).length;
+      html.push('<button class="chip set" data-v="s:' + esc(s.id) + '" aria-pressed="' + (filter === "s:" + s.id) + '">' +
+        esc(s.name) + (n ? '<span class="chip-n">' + n + "</span>" : "") + "</button>");
+    });
+    html.push('<span class="chip-sep" aria-hidden="true"></span>');
+    html.push('<button class="chip" data-v="all" aria-pressed="' + (filter === "all") + '">Wszystko</button>');
     used.forEach(function (g) {
-      html.push('<button class="chip" data-g="' + esc(g) + '" aria-pressed="' + (filter === g) + '">' + esc(g) + "</button>");
+      html.push('<button class="chip" data-v="g:' + esc(g) + '" aria-pressed="' + (filter === "g:" + g) + '">' + esc(g) + "</button>");
     });
     document.getElementById("chips").innerHTML = html.join("");
   }
+  /* pasek nad listą: co to za zestaw, ile ćwiczeń, kiedy ostatnio i skrót do edycji */
+  function renderSetbar() {
+    var slot = document.getElementById("set-slot");
+    var s = activeSet();
+    if (!s) { slot.innerHTML = ""; return; }
+    var n = setMachines(s).length, last = setLastAt(s);
+    slot.innerHTML = '<section class="setbar"><div><h2>' + esc(s.name) + "</h2>" +
+      '<p class="meta"><span class="tag">zestaw</span>' +
+      '<span class="when' + (isToday(last) ? " fresh" : "") + '">' +
+      (n ? n + (n === 1 ? " ćwiczenie · " : " ćw. · ") + esc(ago(last)) : "pusty") + "</span></p></div>" +
+      '<button class="icon" id="set-edit" aria-label="Edytuj zestaw">✎</button></section>';
+    slot.querySelector("#set-edit").addEventListener("click", function () { openSetEditor(s.id); });
+  }
   function renderScore() {
-    var done = state.machines.filter(function (m) { return isToday(m.lastAt); }).length;
-    var n = state.machines.length;
+    var s = activeSet();
+    var pool = s ? setMachines(s) : state.machines;   // w zestawie liczy się postęp zestawu
+    var done = pool.filter(function (m) { return isToday(m.lastAt); }).length;
+    var n = pool.length;
     document.getElementById("score").innerHTML = n ? "dziś <b>" + done + "</b> / " + n : "";
     document.getElementById("barfill").style.width = n ? (done / n * 100) + "%" : "0%";
   }
-  function cardHTML(m) {
+  function cardHTML(m, i) {
     var w = weightOf(m), lv = levelOf(m), today = isToday(m.lastAt);
+    var pos = activeSet() ? '<span class="tag pos">' + (i + 1) + "</span>" : "";
     var plates = m.stack.map(function (_, i) {
       return '<i class="plate' + (i === lv ? " cur" : (i < lv ? " on" : "")) + '"></i>';
     }).join("");
@@ -627,7 +778,7 @@
     }
     return '<article class="card' + (today ? " today" : "") + (m.lastAt ? "" : " unused") + '" data-id="' + esc(m.id) + '">' +
       '<div class="card-head"><div style="flex:1"><h2>' + esc(m.name) + "</h2>" +
-        '<p class="meta"><span class="tag">' + esc(m.group) + "</span>" +
+        '<p class="meta">' + pos + '<span class="tag">' + esc(m.group) + "</span>" +
         '<span class="when' + (today ? " fresh" : "") + '">' + esc(ago(m.lastAt)) + "</span></p></div>" +
         '<button class="icon" data-act="edit" aria-label="Edytuj">✎</button></div>' +
       '<div class="stepper">' +
@@ -643,11 +794,15 @@
   }
   function render() {
     renderChips();
+    renderSetbar();
     renderScore();
     var items = visible();
-    document.getElementById("list").innerHTML = items.length
-      ? items.map(cardHTML).join("")
+    var empty = activeSet()
+      ? '<p class="empty">Ten zestaw jest jeszcze pusty.<br><button class="btn" data-act="setup">Ułóż zestaw</button></p>'
       : '<p class="empty">Brak maszyn w tej partii.</p>';
+    document.getElementById("list").innerHTML = items.length
+      ? items.map(function (m, i) { return cardHTML(m, i); }).join("")
+      : empty;
   }
   /* aktualizacja jednej karty bez przebudowy przycisków — płynne trzymanie palca */
   function refreshCard(card, m) {
@@ -666,6 +821,7 @@
     when.textContent = ago(m.lastAt);
     when.classList.toggle("fresh", today);
     card.querySelector(".done").textContent = today ? "✓ zrobione" : "Zrobione dziś";
+    renderSetbar();
     renderScore();
   }
 
@@ -674,6 +830,11 @@
     var m = id ? find(id) : { id: null, name: "", group: "Nogi", stack: range(5, 100, 5), level: 0, lastAt: null, history: [] };
     if (!m) return;
     editing = id || "new";
+    /* nowa maszyna dodana z widoku zestawu od razu w nim ląduje */
+    var here = activeSet();
+    var inSets = state.sets.filter(function (s) {
+      return id ? s.items.indexOf(id) >= 0 : (here && s.id === here.id);
+    }).map(function (s) { return s.id; });
     var scrim = document.createElement("div");
     scrim.className = "scrim";
     scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Ustawienia maszyny">' +
@@ -683,6 +844,11 @@
       '<div class="field"><label for="f-group">Partia</label><select id="f-group">' +
         GROUPS.map(function (g) { return '<option value="' + esc(g) + '"' + (g === m.group ? " selected" : "") + ">" + esc(g) + "</option>"; }).join("") +
       "</select></div>" +
+      '<div class="field"><label>W zestawach</label><div class="setpick">' +
+        state.sets.map(function (s) {
+          return '<button type="button" class="chip set" data-set="' + esc(s.id) + '" aria-pressed="' +
+            (inSets.indexOf(s.id) >= 0) + '">' + esc(s.name) + "</button>";
+        }).join("") + "</div></div>" +
       '<div class="field"><label for="f-stack">Obciążenia (kg)</label>' +
         '<textarea id="f-stack" spellcheck="false" inputmode="decimal">' + esc(m.stack.map(fmt).join(", ")) + "</textarea>" +
         '<span class="hint">Kolejne poziomy stosu, po przecinku — dokładnie jak na maszynie.</span></div>' +
@@ -702,6 +868,24 @@
     if (!id) nameInput.focus();
 
     scrim.addEventListener("click", function (e) { if (e.target === scrim) close(); });
+    scrim.querySelector(".setpick").addEventListener("click", function (e) {
+      var b = e.target.closest(".chip");
+      if (!b) return;
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+      buzz();
+    });
+    /* zaznaczone zestawy z arkusza przypisujemy maszynie po zapisie */
+    function applySets(mid) {
+      var chips = scrim.querySelectorAll(".setpick .chip");
+      for (var i = 0; i < chips.length; i++) {
+        var set = findSet(chips[i].getAttribute("data-set"));
+        if (!set) continue;
+        var want = chips[i].getAttribute("aria-pressed") === "true";
+        var has = set.items.indexOf(mid) >= 0;
+        if (want && !has) set.items.push(mid);
+        else if (!want && has) set.items = set.items.filter(function (x) { return x !== mid; });
+      }
+    }
     scrim.querySelector("#g-run").addEventListener("click", function () {
       var a = parseFloat(String(scrim.querySelector("#g-from").value).replace(",", "."));
       var b = parseFloat(String(scrim.querySelector("#g-to").value).replace(",", "."));
@@ -715,6 +899,7 @@
     if (id) scrim.querySelector("#f-del").addEventListener("click", function () {
       if (!confirm("Usunąć „" + m.name + "” razem z historią?")) return;
       state.machines = state.machines.filter(function (x) { return x.id !== id; });
+      dropFromSets(id);
       save(); close(); render();
     });
     scrim.querySelector("#f-save").addEventListener("click", function () {
@@ -731,13 +916,105 @@
         t.name = name; t.group = group; t.stack = stack;
         var idx = stack.indexOf(oldW);
         t.level = idx >= 0 ? idx : Math.min(levelOf(t), stack.length - 1);
+        applySets(id);
       } else {
-        state.machines.push({ id: uid(), name: name, group: group, stack: stack, level: 0, lastAt: null, history: [] });
+        var fresh = { id: uid(), name: name, group: group, stack: stack, level: 0, lastAt: null, history: [] };
+        state.machines.push(fresh);
+        applySets(fresh.id);
       }
       save(); close(); render();
     });
     function close() {
       editing = null;
+      scrim.remove();
+      document.removeEventListener("keydown", onKey);
+    }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+  }
+
+  /* ---------- układanie zestawu ---------- */
+  function openSetEditor(id) {
+    var set = findSet(id);
+    if (!set) return;
+    if (!state.machines.length) { toast("Najpierw dodaj jakąś maszynę"); return; }
+    /* pracujemy na kopii — „Anuluj” ma naprawdę anulować */
+    var draft = { items: set.items.filter(function (x) { return !!find(x); }) };
+
+    var scrim = document.createElement("div");
+    scrim.className = "scrim";
+    scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Zestaw ćwiczeń">' +
+      '<div class="grab"></div><h3>Zestaw ćwiczeń</h3>' +
+      '<div class="field"><label for="s-name">Nazwa</label>' +
+        '<input id="s-name" value="' + esc(set.name) + '" placeholder="np. Poniedziałek — góra" autocomplete="off">' +
+        '<span class="hint">Kolejność niżej to kolejność ćwiczeń na treningu.</span></div>' +
+      '<div id="s-body"></div>' +
+      '<div class="sheet-actions">' +
+        '<button class="btn" id="s-cancel">Anuluj</button>' +
+        '<button class="btn primary" id="s-save">Zapisz</button>' +
+      "</div></div>";
+    document.body.appendChild(scrim);
+
+    var sheet = scrim.querySelector(".sheet");
+    var body = scrim.querySelector("#s-body");
+
+    function draw() {
+      var chosen = draft.items.map(find);
+      var rest = state.machines.filter(function (m) { return draft.items.indexOf(m.id) < 0; });
+      var html = '<p class="sub">W zestawie (' + chosen.length + ")</p>";
+      if (chosen.length) {
+        html += '<div class="picks">' + chosen.map(function (m, i) {
+          return '<div class="pick"><span class="ord">' + (i + 1) + ".</span>" +
+            '<span class="nm">' + esc(m.name) + "<small>" + esc(m.group) + "</small></span>" +
+            '<button type="button" data-up="' + esc(m.id) + '" aria-label="Wyżej"' + (i === 0 ? " disabled" : "") + ">↑</button>" +
+            '<button type="button" data-down="' + esc(m.id) + '" aria-label="Niżej"' + (i === chosen.length - 1 ? " disabled" : "") + ">↓</button>" +
+            '<button type="button" data-off="' + esc(m.id) + '" aria-label="Wyrzuć z zestawu">✕</button></div>';
+        }).join("") + "</div>";
+      } else {
+        html += '<p class="picks-empty">Nic tu jeszcze nie ma — dobierz ćwiczenia z listy niżej.</p>';
+      }
+      if (rest.length) {
+        html += '<p class="sub">Dołóż ćwiczenie</p><div class="picks">' + rest.map(function (m) {
+          return '<div class="pick"><span class="nm">' + esc(m.name) + "<small>" + esc(m.group) + "</small></span>" +
+            '<button type="button" class="plus" data-on="' + esc(m.id) + '" aria-label="Dodaj do zestawu">+</button></div>';
+        }).join("") + "</div>";
+      }
+      body.innerHTML = html;
+    }
+    draw();
+
+    body.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b || b.disabled) return;
+      var on = b.getAttribute("data-on"), off = b.getAttribute("data-off");
+      var up = b.getAttribute("data-up"), down = b.getAttribute("data-down");
+      if (on) draft.items.push(on);
+      else if (off) draft.items = draft.items.filter(function (x) { return x !== off; });
+      else if (up || down) {
+        var i = draft.items.indexOf(up || down), j = i + (up ? -1 : 1);
+        if (i < 0 || j < 0 || j >= draft.items.length) return;
+        var t = draft.items[i]; draft.items[i] = draft.items[j]; draft.items[j] = t;
+      } else return;
+      var keep = sheet.scrollTop;
+      draw();
+      sheet.scrollTop = keep;
+      buzz();
+    });
+
+    scrim.addEventListener("click", function (e) { if (e.target === scrim) close(); });
+    scrim.querySelector("#s-cancel").addEventListener("click", close);
+    scrim.querySelector("#s-save").addEventListener("click", function () {
+      var name = scrim.querySelector("#s-name").value.trim();
+      set.name = name || set.name;
+      set.items = draft.items.slice();
+      save();
+      filter = "s:" + set.id;
+      saveView();
+      close();
+      render();
+      toast(set.name + " — " + set.items.length + " ćw.");
+    });
+    function close() {
       scrim.remove();
       document.removeEventListener("keydown", onKey);
     }
@@ -782,6 +1059,7 @@
     if (!btn) return;
     var act = btn.getAttribute("data-act");
     if (act === "inc" || act === "dec") return; // obsłużone przy dotknięciu
+    if (act === "setup") { var cur = activeSet(); if (cur) openSetEditor(cur.id); return; }
     var card = btn.closest(".card");
     var m = find(card.getAttribute("data-id"));
     if (!m) return;
@@ -792,7 +1070,8 @@
   document.getElementById("chips").addEventListener("click", function (e) {
     var b = e.target.closest(".chip");
     if (!b) return;
-    filter = b.getAttribute("data-g");
+    filter = b.getAttribute("data-v");
+    saveView();
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
@@ -835,7 +1114,21 @@
         history: Array.isArray(m.history) ? m.history : []
       };
     });
+    state.sets = adoptSets(data.sets, state.machines);
     return true;
+  }
+  /* zestawy z pamięci: zawsze trzy, tylko istniejące maszyny, bez duplikatów */
+  function adoptSets(raw, machines) {
+    var ids = machines.map(function (m) { return m.id; });
+    if (!Array.isArray(raw)) raw = [];
+    return newSets().map(function (d, i) {
+      var r = raw[i] || {};
+      var name = typeof r.name === "string" && r.name.trim() ? r.name.trim() : d.name;
+      var items = Array.isArray(r.items) ? r.items.filter(function (x, k, arr) {
+        return ids.indexOf(x) >= 0 && arr.indexOf(x) === k;
+      }) : [];
+      return { id: d.id, name: name, items: items };
+    });
   }
 
   var booted = false;
@@ -843,7 +1136,14 @@
     var cached = localStorage.getItem(LS_KEY);
     if (cached) booted = adopt(JSON.parse(cached));
   } catch (e) {}
-  if (!booted) state.machines = DEFAULTS;
+  if (!booted) {
+    state.machines = DEFAULTS;
+    state.sets = starterSets(state.machines);
+  }
+  try {
+    var savedView = localStorage.getItem(LS_VIEW);
+    if (savedView) filter = savedView;
+  } catch (e) {}
   render();
   installHint();
 })();
